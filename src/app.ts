@@ -1,8 +1,11 @@
 import express, { Express, NextFunction, Request, Response } from 'express';
+import crypto from 'crypto';
+import fs from 'fs';
 import path from 'path';
 import { healthRouter } from './routes/health';
 import { canonicalHost } from './canonical';
-import { renderHome, renderNotFound } from './views/page';
+import { Site, loadSite } from './content';
+import { Assets, renderHome, renderNotFound } from './views/page';
 
 export const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 
@@ -11,10 +14,12 @@ export const PUBLIC_DIR = path.join(__dirname, '..', 'public');
  *  (the cluster rule; see kube-setup's "Building a New Service"). */
 export const TRUSTED_PROXIES = ['loopback', '10.42.0.0/16', '10.43.0.0/16'];
 
-/** Everything the page needs comes from this origin, and nothing runs. */
+/** Everything comes from this origin. The one script is a file, never inline;
+ *  the picture colours are set through the CSSOM, which style-src allows. */
 const CSP = [
   "default-src 'none'",
   "style-src 'self'",
+  "script-src 'self'",
   "img-src 'self'",
   "base-uri 'none'",
   "form-action 'none'",
@@ -31,7 +36,16 @@ function securityHeaders(_req: Request, res: Response, next: NextFunction): void
   next();
 }
 
-export function createApp(): Express {
+/** A short content hash for each client file, carried as ?v= so a deploy
+ *  reaches returning visitors at once even though the files are cached. */
+function assetVersions(dir: string): Assets {
+  const v = (name: string) =>
+    crypto.createHash('sha256').update(fs.readFileSync(path.join(dir, name))).digest('hex').slice(0, 10);
+  return { css: v('site.css'), js: v('site.js') };
+}
+
+export function createApp(site: Site = loadSite()): Express {
+  const assets = assetVersions(PUBLIC_DIR);
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', TRUSTED_PROXIES);
@@ -42,23 +56,23 @@ export function createApp(): Express {
   app.use(canonicalHost);
   app.use(securityHeaders);
 
+  // Rendered per request: it is a few kilobytes of string, and an exhibition
+  // moves from Upcoming to Past on the right day without a restart.
   app.get('/', (_req: Request, res: Response) => {
-    res.type('html').send(renderHome());
+    res.set('Cache-Control', 'public, max-age=300');
+    res.type('html').send(renderHome(site, assets));
   });
 
-  // Browsers ask for this whether the page names one or not. There is no icon
-  // yet (nothing to make one from), so say "nothing" rather than log a 404 on
-  // every first visit. Replace with a real file in public/ when there is one.
-  app.get('/favicon.ico', (_req: Request, res: Response) => {
-    res.set('Cache-Control', 'public, max-age=86400').status(204).end();
-  });
-
-  // Not fingerprinted, so cached briefly rather than for a year: a deploy
-  // must reach returning visitors within the hour.
-  app.use(express.static(PUBLIC_DIR, { index: false, maxAge: '1h' }));
+  // Picture file names carry a content hash, so they never change in place.
+  app.use(
+    '/img',
+    express.static(path.join(PUBLIC_DIR, 'img'), { index: false, immutable: true, maxAge: '365d', fallthrough: true }),
+  );
+  // site.css/js are fetched with ?v=<hash>; the icons rarely change.
+  app.use(express.static(PUBLIC_DIR, { index: false, maxAge: '1d' }));
 
   app.use((_req: Request, res: Response) => {
-    res.status(404).type('html').send(renderNotFound());
+    res.status(404).type('html').send(renderNotFound(site, assets));
   });
 
   return app;

@@ -13,6 +13,9 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=builder /app/dist ./dist
 COPY public ./public
+# What the page says (site.json) and the picture sizes the pipeline measured
+# (images.json). The masters in originals/ stay out of the image.
+COPY content ./content
 # The uid rather than the name, so the image is verifiably non-root on its
 # own (`node` is uid 1000 in the official images). The cluster's
 # securityContext (runAsNonRoot, runAsUser/Group 1000) says the same thing
