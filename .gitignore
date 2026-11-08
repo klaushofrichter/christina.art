@@ -12,3 +12,4 @@ playwright-report/
 # and public/img belongs in this public repo.
 images-incoming/
 assets/
+lighthouse-report*
