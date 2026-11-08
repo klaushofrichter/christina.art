@@ -15,6 +15,12 @@
   --slow: 1.6s;
   --ease: cubic-bezier(0.2, 0.6, 0.2, 1);
   --gutter: 16px;
+  /* The enlarged view: in light mode the paper tone, a shade deeper than
+     the page so the picture still lifts off it; in dark mode near black. */
+  --lb-bg: #ebe6de;
+  --lb-backdrop: rgba(235, 230, 222, 0.6);
+  --lb-button: #6f6860;
+  --lb-shadow: 0 2px 6px rgba(43, 40, 37, 0.08), 0 30px 60px -30px rgba(43, 40, 37, 0.35);
   color-scheme: light;
 }
 
@@ -28,6 +34,10 @@
     --accent: #c4a37a;
     --accent-soft: rgba(196, 163, 122, 0.32);
     --frame-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 18px 40px -24px rgba(0, 0, 0, 0.7);
+    --lb-bg: #141210;
+    --lb-backdrop: rgba(20, 18, 16, 0.6);
+    --lb-button: #cfc7bb;
+    --lb-shadow: none;
     color-scheme: dark;
   }
 }
@@ -259,26 +269,26 @@ h3 { font-weight: 400; margin: 0; }
   margin: 0;
   padding: 0;
   border: 0;
-  background: #181614;
-  color: #e9e3da;
+  background: var(--lb-bg);
+  color: var(--ink);
   overscroll-behavior: contain;
 }
 .lightbox[open] { display: flex; align-items: center; justify-content: center; animation: fade 0.9s var(--ease); }
-.lightbox::backdrop { background: rgba(24, 22, 20, 0.6); }
+.lightbox::backdrop { background: var(--lb-backdrop); }
 @keyframes fade { from { opacity: 0; } }
 
 .lightbox figure { margin: 0; padding: 56px 12px calc(20px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; max-height: 100%; width: 100%; }
 .stage { display: flex; justify-content: center; touch-action: pan-y pinch-zoom; }
-.stage img { width: auto; max-width: calc(100vw - 24px); max-height: calc(100dvh - 150px); transition: opacity 0.9s var(--ease), transform 0.9s var(--ease); }
+.stage img { width: auto; max-width: calc(100vw - 24px); max-height: calc(100dvh - 150px); transition: opacity 0.9s var(--ease), transform 0.9s var(--ease); box-shadow: var(--lb-shadow); }
 .stage img.leaving { opacity: 0; }
-.lightbox .meta, .lightbox .count { color: #a0988e; }
+.lightbox .meta, .lightbox .count { color: var(--muted); }
 .count { font-family: var(--sans); font-size: 0.68rem; letter-spacing: 0.16em; margin-top: 6px; }
 
 .lightbox button {
   position: absolute;
   background: none;
   border: 0;
-  color: #cfc7bb;
+  color: var(--lb-button);
   font: 300 2rem/1 var(--serif);
   width: 52px;
   height: 52px;
