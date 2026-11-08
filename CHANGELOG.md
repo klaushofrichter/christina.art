@@ -16,9 +16,7 @@ this file is where notes are written *before* a release, not an archive.
      (scripts/check-changelog.sh fails a PR into production that would do so).
 
      Leave the section genuinely empty when there is nothing to say: every
-     non-blank line under the heading is published, placeholders included. -->
-## [Unreleased]
+     non-blank line under the heading is published, placeholders included.
 
-First release: a placeholder page for Christina Schwarz ("website coming
-soon"), served at christinaschwarz.art, with www.christinaschwarz.art
-redirecting permanently to it.
+     Currently empty. Last released: v2026.11.08.1. -->
+## [Unreleased]
