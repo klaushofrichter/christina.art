@@ -31,4 +31,7 @@ afterwards.
 
 A new site icon: one of the poppies from "Pink Poppies" (the drawn mark it
 replaces is kept in the repository). The DEMO sash now shows in the enlarged
-view too; while it does, Close sits at the top left.
+view too; while it does, Close sits at the top left. The footer is one line
+on a computer (©, version, credit, separated by dots). Fixed for Firefox and
+Safari: pictures now hold their space while they load, so the page no longer
+grows under the reader and the section links land on their section.

@@ -64,6 +64,26 @@ test('nothing jumps while the page loads (layout shift)', async ({ page }) => {
   expect(cls).toBeLessThan(0.02);
 });
 
+test('every work holds its place before its picture arrives', async ({ page }) => {
+  // Hold back every picture, as a slow network would. Each work must already
+  // take the box its picture will fill: in Firefox and Safari an unsized lazy
+  // picture took none, the page grew as they arrived, and a section link
+  // stopped short of its section.
+  await page.route('**/img/**', () => {});
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  const boxes = await page.locator('figure.work .frame img').evaluateAll((imgs) =>
+    imgs.map((img) => {
+      const r = img.getBoundingClientRect();
+      return { w: r.width, h: r.height, aspect: Number(img.getAttribute('width')) / Number(img.getAttribute('height')) };
+    }),
+  );
+  expect(boxes.length).toBeGreaterThan(0);
+  for (const b of boxes) {
+    expect(b.h, 'a picture with no height before it loads').toBeGreaterThan(100);
+    expect(b.w / b.h).toBeCloseTo(b.aspect, 1);
+  }
+});
+
 test('a phone fetches small text and pictures sized for its screen', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'phone projects only');
   await page.goto('/', { waitUntil: 'load' });

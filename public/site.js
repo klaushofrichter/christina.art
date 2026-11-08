@@ -18,6 +18,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // ---- each work's frame holds its picture's size before the file arrives ----
+  // The img is width:auto (so a tall work keeps its height cap), which leaves
+  // Firefox and Safari no width to hang the width/height aspect on: until a
+  // lazy picture loaded it took no space, the page grew by thousands of
+  // pixels as they arrived, and a section link scrolled to where its section
+  // used to be. Sizing the frame from the picture's aspect (the same rule as
+  // its `sizes`: full width, but no taller than the height cap) makes the box
+  // right from the first layout in every browser.
+  for (const frame of document.querySelectorAll('.frame')) {
+    const img = frame.querySelector('img');
+    const w = Number(img && img.getAttribute('width'));
+    const h = Number(img && img.getAttribute('height'));
+    if (w > 0 && h > 0) {
+      frame.style.setProperty('--ar', String(w / h));
+      frame.classList.add('sized');
+    }
+  }
+
   // ---- slow reveal as things come into view ----
   const reveals = document.querySelectorAll('.reveal');
   if ('IntersectionObserver' in window && !reduced) {

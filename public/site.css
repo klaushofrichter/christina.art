@@ -182,6 +182,11 @@ h1 {
   box-shadow: var(--frame-shadow);
   transition: filter 1.4s var(--ease), opacity 1.4s var(--ease);
 }
+/* With JS (site.js sets --ar from the picture's width/height): the frame is
+   as wide as the picture will be drawn, before it has loaded, and the
+   picture fills it. Without JS, the rule above stands. */
+.frame.sized { width: min(100%, calc(min(82svh, 1400px) * var(--ar))); }
+.frame.sized img { width: 100%; }
 .frame:hover img { filter: brightness(1.03) saturate(1.02); }
 
 /* Fade a picture in once it has arrived, over its own muted colour. */
