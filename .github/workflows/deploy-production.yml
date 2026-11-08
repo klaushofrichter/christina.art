@@ -160,7 +160,10 @@ jobs:
           [ "$page" = "200" ] || { echo "::error::public page returned ${page}"; exit 1; }
           grep -q '<h1>Christina Schwarz</h1>' /tmp/page.html \
             || { echo "::error::page does not carry the expected heading"; exit 1; }
-          echo "public page ok"
+          # The footer names the release; it must be the one just stamped.
+          grep -q "<span class=\"ver\">v${VERSION}</span>" /tmp/page.html \
+            || { echo "::error::page footer does not show v${VERSION}"; exit 1; }
+          echo "public page ok, footer shows v${VERSION}"
 
           # www must redirect permanently to the bare name, path and query
           # kept. Traefik answers a GET with 301 (308 for HEAD/POST), the app

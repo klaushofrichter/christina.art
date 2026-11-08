@@ -3,6 +3,7 @@ dist
 test
 e2e
 scripts
+!scripts/build-content.ts
 playwright.config.ts
 vitest.config.mts
 test-results

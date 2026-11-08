@@ -1,0 +1,38 @@
+{
+  "_note": "PLACEHOLDER: made up for the first iteration (Klaus, 2026-11-08). Set \"placeholder\" to false, or drop it, once this file holds real data; the demo banner shows while any content file is a placeholder. Dates are YYYY-MM-DD; upcoming and past are worked out from them.",
+  "placeholder": true,
+  "exhibitions": [
+    {
+      "title": "Wildflowers",
+      "kind": "Solo exhibition",
+      "venue": "Galerie am Fluss",
+      "city": "Toronto",
+      "from": "2027-04-09",
+      "to": "2027-05-16"
+    },
+    {
+      "title": "Paper Gardens",
+      "kind": "Solo exhibition",
+      "venue": "North Light Gallery",
+      "city": "Montréal",
+      "from": "2026-05-08",
+      "to": "2026-06-14"
+    },
+    {
+      "title": "Watercolour Now",
+      "kind": "Group exhibition",
+      "venue": "Harbour Arts Centre",
+      "city": "Halifax",
+      "from": "2025-10-03",
+      "to": "2025-11-09"
+    },
+    {
+      "title": "Small Works",
+      "kind": "Group exhibition",
+      "venue": "Studio Linde",
+      "city": "Ottawa",
+      "from": "2024-11-15",
+      "to": "2024-12-20"
+    }
+  ]
+}

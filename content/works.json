@@ -1,0 +1,42 @@
+{
+  "_note": "PLACEHOLDER: made up for the first iteration (Klaus, 2026-11-08). Set \"placeholder\" to false, or drop it, once this file holds real data; the demo banner shows while any content file is a placeholder. Each entry's \"image\" is the slug npm run images gave the picture (see content/images.json); the order here is the order on the page.",
+  "placeholder": true,
+  "works": [
+    {
+      "image": "003",
+      "title": "Pink Poppies",
+      "year": 2026,
+      "medium": "Watercolour on paper"
+    },
+    {
+      "image": "005",
+      "title": "Anemones",
+      "year": 2026,
+      "medium": "Watercolour and ink on paper, framed"
+    },
+    {
+      "image": "004",
+      "title": "Field Poppies",
+      "year": 2025,
+      "medium": "Watercolour on paper"
+    },
+    {
+      "image": "006",
+      "title": "Sweet Violets",
+      "year": 2025,
+      "medium": "Watercolour on paper, framed"
+    },
+    {
+      "image": "001",
+      "title": "Red Poppies",
+      "year": 2025,
+      "medium": "Watercolour on paper"
+    },
+    {
+      "image": "002",
+      "title": "Sunflower",
+      "year": 2024,
+      "medium": "Watercolour on paper"
+    }
+  ]
+}

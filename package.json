@@ -4,7 +4,7 @@
   "description": "Website for the artist Christina Schwarz, served at christinaschwarz.art by Express on Knative/k3s.",
   "type": "commonjs",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && tsx scripts/build-content.ts",
     "start": "node dist/server.js",
     "dev": "tsx src/server.ts",
     "test": "vitest run",
