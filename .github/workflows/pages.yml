@@ -1,0 +1,105 @@
+name: GitHub Pages backup
+
+# A static copy of the released site on GitHub Pages, as a backup location
+# (Klaus, 2026-11-08): https://klaushofrichter.github.io/christina.art/
+#
+# It mirrors what is on `production`, so it is rebuilt after every successful
+# deploy, and daily, because exhibitions move from Upcoming to Past by date
+# and a static page only knows the day it was built. The copy is marked
+# noindex and its canonical link names https://christinaschwarz.art, so it
+# never competes with the real site in search.
+#
+# Runs on GitHub's runners, not the in-cluster one: it touches nothing in the
+# cluster. A workflow_run (and a schedule) runs in the context of the default
+# branch, which is what the github-pages environment allows by default; the
+# checkout below picks the released code from `production`.
+#
+# One-time setup, by the repo owner: Settings → Pages → Source: GitHub Actions.
+on:
+  workflow_run:
+    workflows: [Deploy production]
+    types: [completed]
+  schedule:
+    - cron: '43 6 * * *'   # 00:43 Chicago (CST), just after the date changes
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.rel.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: production
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+
+      - run: npm ci
+
+      # The footer shows the release, as on the real site.
+      - name: Which release is live
+        id: rel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+          echo "building the copy of ${tag}"
+
+      - name: Build the static copy
+        env:
+          APP_VERSION: ${{ steps.rel.outputs.version }}
+        run: |
+          npm run build
+          npx tsx scripts/build-pages.ts _site "/${GITHUB_REPOSITORY#*/}"
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+      # The copy is served and shows the release it was built from.
+      - name: Check the copy
+        env:
+          URL: ${{ steps.deployment.outputs.page_url }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 12); do
+            page=$(curl -fsS "$URL" || true)
+            if grep -q "<span class=\"ver\">v${VERSION}</span>" <<<"$page"; then
+              grep -q '<h1>Christina Schwarz</h1>' <<<"$page"
+              echo "$URL serves v${VERSION}"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::$URL does not show v${VERSION}"
+          exit 1
