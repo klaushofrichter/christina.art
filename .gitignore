@@ -6,3 +6,9 @@ test-results/
 playwright-report/
 .claude/
 .DS_Store
+
+# Inputs to `npm run images`. They can be raw phone photos with GPS, camera
+# and dates in them; only the pipeline's metadata-free output in originals/
+# and public/img belongs in this public repo.
+images-incoming/
+assets/
