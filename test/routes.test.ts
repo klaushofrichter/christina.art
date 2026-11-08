@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../src/app';
+import { loadSite } from '../src/content';
 
-const app = () => createApp();
+const site = loadSite();
+const app = () => createApp(site);
 
 describe('GET /health', () => {
   afterEach(() => {
@@ -22,8 +24,7 @@ describe('GET /health', () => {
   });
 
   it('answers HEAD (the uptime monitor uses it)', async () => {
-    const res = await request(app()).head('/health');
-    expect(res.status).toBe(200);
+    expect((await request(app()).head('/health')).status).toBe(200);
   });
 
   it('is never redirected, whatever the host', async () => {
@@ -33,13 +34,52 @@ describe('GET /health', () => {
 });
 
 describe('GET /', () => {
-  it('serves the placeholder', async () => {
+  it('carries the heading the deploy smoke test looks for', async () => {
     const res = await request(app()).get('/').set('Host', 'christinaschwarz.art');
     expect(res.status).toBe(200);
     expect(res.type).toBe('text/html');
+    // deploy-production.yml greps for exactly this; keep them in step.
     expect(res.text).toContain('<h1>Christina Schwarz</h1>');
-    expect(res.text).toContain('Website coming soon');
     expect(res.text).toContain('<link rel="canonical" href="https://christinaschwarz.art/">');
+  });
+
+  it('shows every work with its title, in every format', async () => {
+    const res = await request(app()).get('/');
+    for (const w of site.works) {
+      expect(res.text).toContain(`id="work-${w.slug}"`);
+      expect(res.text).toContain(`<span class="title">${w.title}</span>`);
+      for (const ext of ['avif', 'webp', 'jpg']) {
+        expect(res.text).toContain(`/img/${w.slug}-${w.image.widths[0]}.${w.image.hash}.${ext}`);
+      }
+    }
+  });
+
+  it('loads the first work eagerly and the rest lazily', async () => {
+    const res = await request(app()).get('/');
+    expect(res.text.match(/fetchpriority="high"/g)).toHaveLength(1);
+    expect(res.text.match(/loading="lazy"/g)!.length).toBeGreaterThanOrEqual(site.works.length - 1);
+  });
+
+  it('has the exhibitions, the about text and a contact address', async () => {
+    const res = await request(app()).get('/');
+    expect(res.text).toContain('id="exhibitions"');
+    expect(res.text).toContain('id="about"');
+    expect(res.text).toContain(`href="mailto:${site.email}"`);
+    for (const e of site.exhibitions) expect(res.text).toContain(e.title);
+  });
+
+  it('links stylesheet and script with a content version', async () => {
+    const res = await request(app()).get('/');
+    expect(res.text).toMatch(/href="\/site\.css\?v=[0-9a-f]{10}"/);
+    expect(res.text).toMatch(/src="\/site\.js\?v=[0-9a-f]{10}"/);
+  });
+
+  it('runs no inline script, so the CSP can forbid it', async () => {
+    const res = await request(app()).get('/');
+    const inline = [...res.text.matchAll(/<script(?![^>]*\bsrc=)([^>]*)>/g)];
+    for (const m of inline) expect(m[1]).toContain('type="application/json"');
+    expect(res.headers['content-security-policy']).toContain("script-src 'self'");
+    expect(res.headers['content-security-policy']).not.toContain('unsafe-inline');
   });
 
   it('sends the security headers', async () => {
@@ -49,10 +89,33 @@ describe('GET /', () => {
     expect(res.headers['x-powered-by']).toBeUndefined();
   });
 
-  it('serves the stylesheet it links', async () => {
-    const res = await request(app()).get('/site.css');
+  it('escapes content, so a stray < in site.json cannot become markup', async () => {
+    const evil = { ...site, works: site.works.map((w, i) => (i ? w : { ...w, title: '<script>x</script>' })) };
+    const res = await request(createApp(evil)).get('/');
+    expect(res.text).not.toContain('<script>x</script>');
+    expect(res.text).toContain('&lt;script&gt;x&lt;/script&gt;');
+  });
+});
+
+describe('static files', () => {
+  it('serves the stylesheet and script', async () => {
+    expect((await request(app()).get('/site.css')).type).toBe('text/css');
+    expect((await request(app()).get('/site.js')).type).toMatch(/javascript/);
+  });
+
+  it('caches pictures for a year, as immutable', async () => {
+    const w = site.works[0];
+    const res = await request(app()).get(`/img/${w.slug}-${w.image.widths[0]}.${w.image.hash}.avif`);
     expect(res.status).toBe(200);
-    expect(res.type).toBe('text/css');
+    expect(res.type).toBe('image/avif');
+    expect(res.headers['cache-control']).toContain('immutable');
+    expect(res.headers['cache-control']).toContain('max-age=31536000');
+  });
+
+  it('serves the favicon set', async () => {
+    for (const p of ['/favicon.ico', '/favicon.svg', '/apple-touch-icon.png']) {
+      expect((await request(app()).get(p)).status, p).toBe(200);
+    }
   });
 });
 
@@ -73,15 +136,7 @@ describe('www redirect', () => {
   });
 
   it('leaves the canonical name alone', async () => {
-    const res = await request(app()).get('/').set('Host', 'christinaschwarz.art');
-    expect(res.status).toBe(200);
-  });
-});
-
-describe('GET /favicon.ico', () => {
-  it('answers with no content rather than a 404', async () => {
-    const res = await request(app()).get('/favicon.ico');
-    expect(res.status).toBe(204);
+    expect((await request(app()).get('/').set('Host', 'christinaschwarz.art')).status).toBe(200);
   });
 });
 
@@ -94,7 +149,7 @@ describe('unknown paths', () => {
   });
 
   it('cannot read outside public/', async () => {
-    const res = await request(app()).get('/..%2fpackage.json');
-    expect(res.status).toBe(404);
+    expect((await request(app()).get('/..%2fpackage.json')).status).toBe(404);
+    expect((await request(app()).get('/img/..%2f..%2fcontent%2fsite.json')).status).toBe(404);
   });
 });

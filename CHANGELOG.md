@@ -20,3 +20,10 @@ this file is where notes are written *before* a release, not an archive.
 
      Currently empty. Last released: v2026.11.08.1. -->
 ## [Unreleased]
+
+The site now shows Christina's watercolours: six works, one at a time and
+enlarged on a tap or click (swipe and arrow keys to page, Back to close),
+followed by exhibitions and a short about section with a portrait and contact
+address. Pictures are served as AVIF or WebP at the size the screen needs,
+with no photo metadata. New favicon. Biography, titles and exhibitions are
+placeholders for now.

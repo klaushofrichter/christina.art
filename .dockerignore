@@ -11,3 +11,6 @@ playwright-report
 .github
 *.md
 .env
+originals
+images-incoming
+assets
