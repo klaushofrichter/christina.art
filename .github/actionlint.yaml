@@ -1,0 +1,5 @@
+# The deploy runs on this repo's in-cluster runner (kube-setup
+# manifests/christina-art-runner), registered with these labels.
+self-hosted-runner:
+  labels:
+    - k3s

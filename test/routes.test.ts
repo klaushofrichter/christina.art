@@ -106,6 +106,9 @@ describe('demo sash and version', () => {
     const res = await request(app()).get('/');
     expect(res.text).toContain('class="sash"');
     expect(res.text).toContain('<body class="has-sash">');
+    // Once on the page, once in the enlarged view (a modal dialog covers the page's).
+    expect(res.text.match(/class="sash"/g)).toHaveLength(2);
+    expect(res.text).toMatch(/<dialog class="lightbox"[^>]*>\n<div class="sash"/);
   });
 
   it('drops the sash once the content is real', async () => {
@@ -143,7 +146,7 @@ describe('static files', () => {
   });
 
   it('serves the favicon set', async () => {
-    for (const p of ['/favicon.ico', '/favicon.svg', '/apple-touch-icon.png']) {
+    for (const p of ['/favicon.ico', '/favicon-32.png', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png']) {
       expect((await request(app()).get(p)).status, p).toBe(200);
     }
   });

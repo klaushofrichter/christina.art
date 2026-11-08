@@ -13,7 +13,8 @@
  *     cache them for a year and a replaced picture still reaches everyone.
  *  3. content/images.json records sizes, widths, hash and a muted dominant
  *     colour (painted behind each picture while it loads).
- *  4. The favicon set is rendered from public/favicon.svg.
+ *  4. The favicon set is rendered from a crop of one work (FAVICON_CROP), or
+ *     from public/favicon.svg when no crop is set.
  *
  * Deterministic: re-running with nothing changed rewrites nothing.
  */
@@ -165,12 +166,42 @@ function ico(pngs: { size: number; data: Buffer }[]): Buffer {
   return Buffer.concat([header, dir, ...pngs.map((p) => p.data)]);
 }
 
+/** The favicon: a square cut from one of the works, or, with this set to
+ *  null, the drawn mark in public/favicon.svg (the first favicon, kept in
+ *  design/favicon-v1/). Since 2026-11-08 it is the upper-right poppy of
+ *  "Pink Poppies" (003), framed as Klaus chose it: flower and stem together,
+ *  which still reads as a flower at 16px where a tighter crop does not.
+ *  Coordinates are in the master (originals/works/003.jpg, 2379x3200). */
+const FAVICON_CROP: { work: string; left: number; top: number; size: number } | null = {
+  work: '003',
+  left: 1380,
+  top: 220,
+  size: 960,
+};
+
 async function favicons(): Promise<void> {
-  const svg = fs.readFileSync(path.join(PUBLIC, 'favicon.svg'));
-  const png = (size: number) => sharp(svg, { density: 384 }).resize(size, size).png({ compressionLevel: 9 }).toBuffer();
+  let source: Buffer;
+  let density: number | undefined;
+  if (FAVICON_CROP) {
+    const { work, left, top, size } = FAVICON_CROP;
+    // From the metadata-free master, so the icon carries none either.
+    source = await sharp(path.join(WORKS_DIR, `${work}.jpg`)).extract({ left, top, width: size, height: size }).toBuffer();
+  } else {
+    source = fs.readFileSync(path.join(PUBLIC, 'favicon.svg'));
+    density = 384;
+  }
+  // A palette PNG for the larger sizes: a painted texture loses nothing
+  // visible at 256 colours and the files shrink about fivefold.
+  const png = (px: number) =>
+    sharp(source, density ? { density } : {})
+      .resize(px, px, { kernel: 'lanczos3' })
+      .png(px >= 128 ? { palette: true, quality: 90, effort: 10, compressionLevel: 9 } : { compressionLevel: 9 })
+      .toBuffer();
   const small = await Promise.all([16, 32, 48].map(async (size) => ({ size, data: await png(size) })));
   fs.writeFileSync(path.join(PUBLIC, 'favicon.ico'), ico(small));
+  fs.writeFileSync(path.join(PUBLIC, 'favicon-32.png'), await png(32));
   fs.writeFileSync(path.join(PUBLIC, 'apple-touch-icon.png'), await png(180));
+  fs.writeFileSync(path.join(PUBLIC, 'icon-192.png'), await png(192));
   fs.writeFileSync(path.join(PUBLIC, 'icon-512.png'), await png(512));
 }
 

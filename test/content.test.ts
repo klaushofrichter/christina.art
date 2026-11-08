@@ -97,6 +97,13 @@ describe('exhibitions', () => {
     expect(past.map((e) => e.title)).toEqual(['B', 'C']);
   });
 
+  it('keeps a show Upcoming through the evening of its last day (Central time)', () => {
+    // 2027-04-26T03:00Z is still 25 April, 22:00 in Chicago: the show's last day.
+    expect(splitExhibitions(list, new Date('2027-04-26T03:00:00Z')).upcoming.map((e) => e.title)).toEqual(['A']);
+    // 2027-04-26T06:00Z is 26 April, 01:00 in Chicago: it has closed.
+    expect(splitExhibitions(list, new Date('2027-04-26T06:00:00Z')).upcoming).toEqual([]);
+  });
+
   it('moves a show to Past the day after it closes', () => {
     expect(splitExhibitions(list, new Date('2027-04-25T12:00:00Z')).upcoming.map((e) => e.title)).toEqual(['A']);
     expect(splitExhibitions(list, new Date('2027-04-26T12:00:00Z')).upcoming).toEqual([]);
