@@ -12,13 +12,57 @@ doubt about a pattern, that repo and kube-setup's
 `docs/cluster-deployment-requirements.md` / `docs/repository-baseline.md` are
 the references.
 
-**For now it is a placeholder**: her name and "Website coming soon". Put
-nothing on the page that has not been supplied (no biography, works, prices
-or contact details invented for her). What the site will eventually hold is
-Klaus's call.
+One page, in this order: her name, the **works** (one at a time, large,
+each opening into a lightbox), **exhibitions** (upcoming, then past) and
+**about** (portrait, short bio, contact). The mood is Klaus's brief of
+2026-11-08: *muted, understated, subtle highlights, a slow and steady
+atmosphere*, and **it must work very well on a phone**. The site is
+experimental and will be iterated on.
+
+**All visitor-facing text is in `content/site.json`.** The biography, work
+titles, years and exhibitions there are **placeholders Klaus asked to be made
+up** (2026-11-08); the `_note` at the top says so. Don't present them as fact
+anywhere else, and replace them when real text arrives. The email address is
+real.
 
 Fully public: no OAuth, no sessions, no secrets, no `.env`. The only
 configuration it reads is `PORT` (and `APP_VERSION`, stamped by the deploy).
+
+## Pictures: `npm run images`, and never any metadata
+
+1. New works go into `images-incoming/`, a new portrait to `assets/c1.png`.
+2. `npm run images` (`scripts/images.ts`) turns each into a **master** in
+   `originals/` (upright, sRGB, ≤3200px, JPEG) and removes the incoming
+   file, then writes **derivatives** to `public/img`: AVIF, WebP and JPEG at
+   several widths, named `<slug>-<width>.<hash>.<ext>`. It also writes
+   `content/images.json` (sizes, widths, hash, a muted loading colour) and
+   the favicon set from `public/favicon.svg`.
+3. Add the work to `content/site.json` (its `image` is the file's slug).
+4. Commit `originals/`, `public/img`, `content/`.
+
+**The repo is public and phone photos carry GPS coordinates, the camera and
+the time.** The pipeline writes no EXIF/XMP/IPTC, and
+`test/content.test.ts` fails if any picture under `originals/` or
+`public/img` carries any. Never commit a camera original; never call
+sharp's `withMetadata()`/`keepExif()`. The first six were stripped with
+exiftool on the node before they were pushed (branch `images-incoming`),
+and the unstripped originals exist only there.
+
+Derivative names carry a content hash, so `/img` is served
+`immutable` for a year. `site.css`/`site.js` are linked with `?v=<hash>`.
+`originals/` is excluded from the Docker image; `content/` is in it.
+
+## The page, the script and the CSP
+
+Server-rendered (`src/views/page.ts`), escaped, no framework. One script,
+`public/site.js`, loaded in `<head>` without `defer` so the `js` class lands
+before first paint; it does the slow reveals, the fade-in over each
+picture's muted colour, and the lightbox (keyboard, swipe, and Back closes
+it). Without JS the page is complete and every work links to its largest
+JPEG. The CSP allows only same-origin styles, scripts and images: **no
+inline `<script>` or `style=""`** (colours are set through the CSSOM). The
+deploy smoke test greps for `<h1>Christina Schwarz</h1>`, so keep that
+heading exactly.
 
 ## Names
 

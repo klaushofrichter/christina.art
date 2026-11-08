@@ -16,9 +16,14 @@ this file is where notes are written *before* a release, not an archive.
      (scripts/check-changelog.sh fails a PR into production that would do so).
 
      Leave the section genuinely empty when there is nothing to say: every
-     non-blank line under the heading is published, placeholders included. -->
+     non-blank line under the heading is published, placeholders included.
+
+     Currently empty. Last released: v2026.11.08.1. -->
 ## [Unreleased]
 
-First release: a placeholder page for Christina Schwarz ("website coming
-soon"), served at christinaschwarz.art, with www.christinaschwarz.art
-redirecting permanently to it.
+The site now shows Christina's watercolours: six works, one at a time and
+enlarged on a tap or click (swipe and arrow keys to page, Back to close),
+followed by exhibitions and a short about section with a portrait and contact
+address. Pictures are served as AVIF or WebP at the size the screen needs,
+with no photo metadata. New favicon. Biography, titles and exhibitions are
+placeholders for now.

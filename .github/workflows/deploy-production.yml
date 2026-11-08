@@ -102,9 +102,11 @@ jobs:
           cd /tmp/kube-setup-deploy
           # Matches only this app's image, on purpose: if the manifest still
           # names some other image, the grep below fails the deploy loudly
-          # instead of this rewriting a container it does not own.
-          sed -i "s|image: ${IMAGE}:.*|image: ${IMAGE}:${SHA}|" "$MANIFEST"
-          grep -q "image: ${IMAGE}:${SHA}$" "$MANIFEST" \
+          # instead of this rewriting a container it does not own. Anchored to
+          # the YAML key at the start of a line, so a comment that quotes the
+          # image (the first release rewrote one) is never touched.
+          sed -i "s|^\([[:space:]]*\)image: ${IMAGE}:.*|\1image: ${IMAGE}:${SHA}|" "$MANIFEST"
+          grep -q "^[[:space:]]*image: ${IMAGE}:${SHA}$" "$MANIFEST" \
             || { echo "::error::manifest image line did not update to ${SHA}"; exit 1; }
           git config user.name "christina-art-deploy-bot"
           git config user.email "actions@users.noreply.github.com"

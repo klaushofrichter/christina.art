@@ -12,9 +12,15 @@
      it asserts that alerts, security updates and .github/dependabot.yml are in
      place rather than checking them. -->
 
-The website of the artist Christina Schwarz, served at
-[christinaschwarz.art](https://christinaschwarz.art). For now a placeholder:
-her name and "website coming soon".
+The website of the watercolour painter Christina Schwarz, served at
+[christinaschwarz.art](https://christinaschwarz.art): her works, one at a time
+and enlarged on a tap, recent and upcoming exhibitions, and a short about
+section with contact details. Muted and slow by design, and built for phones
+first.
+
+All text is in [`content/site.json`](content/site.json); the pictures go
+through `npm run images` (see `CLAUDE.md`), which strips every bit of photo
+metadata before anything reaches this public repository.
 
 An Express/TypeScript app, run as a [Knative](https://knative.dev/) Service on
 a self-hosted single-node k3s cluster (see
@@ -34,7 +40,8 @@ Public, no login, no secrets; the only configuration it reads is `PORT`.
 ```bash
 npm ci
 npm run dev          # http://localhost:8080
-npm test             # unit tests (vitest + supertest)
+npm test             # unit tests (vitest + supertest), incl. a no-metadata check on every picture
+npm run images       # import images-incoming/ and assets/c1.png, rebuild public/img
 npm run test:e2e     # Playwright; builds and starts the server itself
 ```
 
