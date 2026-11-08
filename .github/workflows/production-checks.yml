@@ -44,7 +44,7 @@ jobs:
           echo "image runs as ${uid}:${gid}"
           [ "$uid:$gid" = "1000:1000" ] || { echo "::error::image runs as ${uid}:${gid}, expected 1000:1000"; exit 1; }
           docker run -d --name pr -p 8080:8080 christina-art:pr
-          for i in $(seq 1 20); do
+          for _ in $(seq 1 20); do
             if curl -fs http://localhost:8080/health -o /tmp/health.json; then break; fi
             sleep 1
           done
@@ -113,7 +113,7 @@ jobs:
           set -euo pipefail
           docker build --build-arg APP_VERSION=2099.01.01.1 -t christina-art:e2e .
           docker run -d --name site -p 8080:8080 christina-art:e2e
-          for i in $(seq 1 30); do curl -fs http://localhost:8080/health && break; sleep 1; done
+          for _ in $(seq 1 30); do curl -fs http://localhost:8080/health && break; sleep 1; done
           echo
 
       # `--with-deps` runs `apt-get update`, which also reads the Google
