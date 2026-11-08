@@ -17,7 +17,7 @@ export const TRUSTED_PROXIES = ['loopback', '10.42.0.0/16', '10.43.0.0/16'];
 
 /** Everything comes from this origin. The one script is a file, never inline;
  *  the picture colours are set through the CSSOM, which style-src allows. */
-const CSP = [
+export const CSP = [
   "default-src 'none'",
   "style-src 'self'",
   "script-src 'self'",
@@ -42,7 +42,7 @@ function securityHeaders(_req: Request, res: Response, next: NextFunction): void
 
 /** A short content hash for each client file, carried as ?v= so a deploy
  *  reaches returning visitors at once even though the files are cached. */
-function assetVersions(dir: string): Assets {
+export function assetVersions(dir: string): Assets {
   const v = (name: string) =>
     crypto.createHash('sha256').update(fs.readFileSync(path.join(dir, name))).digest('hex').slice(0, 10);
   return { css: v('site.css'), js: v('site.js') };

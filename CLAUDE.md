@@ -72,6 +72,19 @@ arrives, drop the flag and the sash goes with it. The email address is real.
 Fully public: no OAuth, no sessions, no secrets, no `.env`. The only
 configuration it reads is `PORT` (and `APP_VERSION`, stamped by the deploy).
 
+## Backup copy on GitHub Pages
+
+https://klaushofrichter.github.io/christina.art/ is a static copy of the
+released site (Klaus, 2026-11-08: "a backup location").
+`.github/workflows/pages.yml` builds it from `production` after every
+successful deploy and daily (exhibitions change sides by date), with
+`scripts/build-pages.ts`: the server's own renderer, every site URL prefixed
+with `/christina.art`, the CSP as a `<meta>` (Pages sends no headers, so no
+`frame-ancestors` there), `noindex`, and the canonical link still naming
+christinaschwarz.art. It touches nothing in the cluster. `test/pages.test.ts`
+checks that the copy names only files it contains. One-time setup by the owner:
+Settings → Pages → Source: GitHub Actions.
+
 ## Pictures: `npm run images`, and never any metadata
 
 1. New works go into `images-incoming/`, a new portrait to `assets/c1.png`.
