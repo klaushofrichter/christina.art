@@ -18,9 +18,5 @@ this file is where notes are written *before* a release, not an archive.
      Leave the section genuinely empty when there is nothing to say: every
      non-blank line under the heading is published, placeholders included.
 
-     Currently empty. Last released: v2026.11.08.2. -->
+     Currently empty. Last released: v2026.11.08.3. -->
 ## [Unreleased]
-
-The enlarged view of a work now follows the light or dark theme instead of
-always being dark: in light mode it sits on the warm paper tone, with a soft
-shadow under the picture.
