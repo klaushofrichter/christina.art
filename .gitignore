@@ -13,3 +13,4 @@ playwright-report/
 images-incoming/
 assets/
 lighthouse-report*
+_site/
