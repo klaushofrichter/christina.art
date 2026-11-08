@@ -39,16 +39,22 @@ export async function scrollThrough(page: Page): Promise<void> {
 }
 
 /** Every <img> on the page has arrived and decoded: none broken, none still
- *  waiting. */
+ *  waiting.
+ *
+ *  WebKit starts a lazy picture only while it is near the viewport, and a
+ *  quick scroll past (scrollThrough) can leave it unrequested once the view
+ *  has moved on; a reader who stops at it gets it. So each poll brings the
+ *  first picture still missing into view, as that reader would, and only a
+ *  picture that never arrives there fails. */
 export async function expectAllPicturesLoaded(page: Page): Promise<void> {
   await expect
     .poll(
       () =>
-        page.evaluate(() =>
-          Array.from(document.images)
-            .filter((img) => !img.complete || img.naturalWidth === 0)
-            .map((img) => img.currentSrc || img.src),
-        ),
+        page.evaluate(() => {
+          const missing = Array.from(document.images).filter((img) => !img.complete || img.naturalWidth === 0);
+          missing[0]?.scrollIntoView({ block: 'center' });
+          return missing.map((img) => img.currentSrc || img.src);
+        }),
       { timeout: 20_000, message: 'pictures that did not load' },
     )
     .toEqual([]);
