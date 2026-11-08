@@ -124,8 +124,35 @@ would replace the released image under the pin.
 Required checks on `production`: `test`, `codeql`, `e2e` (each is its own job
 in `production-checks.yml`, so each reports its own context).
 
-**Never merge into `production` on your own.** Releases happen with Klaus's
-approval.
+**Releases: standing permission (Klaus, 2026-11-08).** "I am giving a standing
+permission to release to production when the tests are green." So: open the
+`main` → `production` PR, and merge it once **all** required checks (`test`,
+`codeql`, `e2e`) pass on its current head; never past a failing or missing
+check, never with an admin override. Then confirm the release live (the
+Live check workflow, or `/health` and the footer yourself) and say so. Only
+what is on `main` is released, and `main` only takes green PRs.
+
+## What is tested, and when
+
+Before anything reaches production, the PR checks (all three are required):
+
+| Check | What it proves |
+|---|---|
+| `test` | unit tests (routes, escaping, CSP, content validation, every file the page names is served with the right type, no orphaned pictures, valid HTML, compression and caching, no photo metadata, the sheet round trip), the build, `npm audit`, the Docker image built and run as uid 1000, the release notes rendered with stand-in values, actionlint on every workflow; on a PR to `production` also the changelog check |
+| `e2e` | the **Docker image this commit builds** (the artifact the deploy ships), walked by Playwright in four browsers: desktop Chrome, Android phone, iPhone (WebKit = Safari), desktop Firefox. Page loads with every picture decoded; every section link lands; every link on the page is followed (sub-pages added later are covered automatically); the enlarged view is paged through every work; Back closes it; keyboard, swipe, no sideways scroll; WCAG 2.2 AA (axe) in both themes; works without JS; reduced motion; no layout shift; pictures sized for the screen; no console errors or CSP violations. Then **Lighthouse** (Google PageSpeed) on a phone: performance ≥ 90, accessibility, best practices and SEO 100 |
+| `codeql` | static analysis, any finding blocks |
+
+After a release, `live-check.yml` runs the `@live` (read-only) part of the
+same suite against https://christinaschwarz.art in Chrome, Android and iPhone,
+including the www and http redirects and the security and cache headers,
+plus Lighthouse, and checks that `/health` and the footer show the release
+just cut. It runs after every successful deploy and daily. The deploy's own
+`curl` smoke test (the documented procedure: version, page, www, quoted in
+the release notes) still runs first; this adds what only a browser sees.
+
+Run the suite locally against the live site:
+`BASE_URL=https://christinaschwarz.art npx playwright test --grep @live`.
+Lighthouse: `scripts/lighthouse-gate.sh <url>`.
 
 ## Versioning and releases
 

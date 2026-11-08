@@ -131,10 +131,20 @@ export function loadCompiled(file: string = COMPILED): Site {
   return loadSite();
 }
 
-/** Upcoming (soonest first) and past (latest first), relative to `today`.
- *  An exhibition that is on now counts as upcoming: it is still worth going. */
+/** The site's calendar day: Central time, as the release versions are. A
+ *  UTC date would close a show at 6 or 7 in the evening of its last day. */
+export const SITE_TIMEZONE = 'America/Chicago';
+
+export function siteDate(at: Date = new Date()): string {
+  // en-CA formats as YYYY-MM-DD.
+  return new Intl.DateTimeFormat('en-CA', { timeZone: SITE_TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).format(at);
+}
+
+/** Upcoming (soonest first) and past (latest first), relative to `today` in
+ *  the site's time zone. An exhibition that is on now, its last day included,
+ *  counts as upcoming: it is still worth going. */
 export function splitExhibitions(list: Exhibition[], today: Date = new Date()) {
-  const iso = today.toISOString().slice(0, 10);
+  const iso = siteDate(today);
   const upcoming = list.filter((e) => e.to >= iso).sort((a, b) => a.from.localeCompare(b.from));
   const past = list.filter((e) => e.to < iso).sort((a, b) => b.from.localeCompare(a.from));
   return { upcoming, past };

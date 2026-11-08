@@ -4,6 +4,7 @@
 [![PR checks](https://github.com/klaushofrichter/christina.art/actions/workflows/production-checks.yml/badge.svg)](https://github.com/klaushofrichter/christina.art/actions/workflows/production-checks.yml)
 [![Build and publish image](https://github.com/klaushofrichter/christina.art/actions/workflows/build-push.yml/badge.svg?branch=main)](https://github.com/klaushofrichter/christina.art/actions/workflows/build-push.yml)
 [![Deploy production](https://github.com/klaushofrichter/christina.art/actions/workflows/deploy-production.yml/badge.svg?branch=production)](https://github.com/klaushofrichter/christina.art/actions/workflows/deploy-production.yml)
+[![Live check](https://github.com/klaushofrichter/christina.art/actions/workflows/live-check.yml/badge.svg)](https://github.com/klaushofrichter/christina.art/actions/workflows/live-check.yml)
 [![Dependabot](https://img.shields.io/badge/dependabot-enabled-025E8C?logo=dependabot&logoColor=white)](https://github.com/klaushofrichter/christina.art/security/dependabot)
 
 <!-- No version numbers in this text: they go stale. The release badge shows
@@ -49,7 +50,8 @@ npm ci
 npm run dev          # http://localhost:8080
 npm test             # unit tests (vitest + supertest), incl. a no-metadata check on every picture
 npm run images       # import images-incoming/ and assets/c1.png, rebuild public/img
-npm run test:e2e     # Playwright; builds and starts the server itself
+npm run test:e2e     # Playwright in four browsers; builds and starts the server itself
+BASE_URL=https://christinaschwarz.art npx playwright test --grep @live   # the live site
 ```
 
 `GET /health` answers `{"status":"ok","service":"christina-art","version":"…"}`.
