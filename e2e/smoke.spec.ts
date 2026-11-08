@@ -108,3 +108,19 @@ test('an unknown page is a 404 with a way home', async ({ page }) => {
   await page.getByRole('link', { name: 'Home' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Christina Schwarz');
 });
+
+for (const scheme of ['light', 'dark'] as const) {
+  test(`the enlarged view follows the ${scheme} theme`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.goto('/');
+    await page.locator('figure.work .frame').first().click();
+    const box = page.locator('dialog.lightbox');
+    await expect(box).toBeVisible();
+    const lum = await box.evaluate((el) => {
+      const [r, g, b] = getComputedStyle(el).backgroundColor.match(/\d+/g)!.map(Number);
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    });
+    if (scheme === 'light') expect(lum).toBeGreaterThan(200);
+    else expect(lum).toBeLessThan(40);
+  });
+}

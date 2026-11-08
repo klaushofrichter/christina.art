@@ -20,3 +20,7 @@ this file is where notes are written *before* a release, not an archive.
 
      Currently empty. Last released: v2026.11.08.2. -->
 ## [Unreleased]
+
+The enlarged view of a work now follows the light or dark theme instead of
+always being dark: in light mode it sits on the warm paper tone, with a soft
+shadow under the picture.
