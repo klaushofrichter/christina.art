@@ -144,7 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
     close(false);
   });
   dialog.addEventListener('click', (ev) => {
-    if (ev.target === dialog || ev.target.tagName === 'FIGURE') close(false);
+    // Beside the picture (the stage now fills the space around it), or the frame.
+    if (ev.target === dialog || ev.target === stage || ev.target.tagName === 'FIGURE') close(false);
   });
   dialog.addEventListener('keydown', (ev) => {
     if (ev.key === 'ArrowRight') step(1);
