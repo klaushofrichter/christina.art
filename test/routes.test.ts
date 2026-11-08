@@ -89,11 +89,41 @@ describe('GET /', () => {
     expect(res.headers['x-powered-by']).toBeUndefined();
   });
 
-  it('escapes content, so a stray < in site.json cannot become markup', async () => {
+  it('escapes content, so a stray < in the content files cannot become markup', async () => {
     const evil = { ...site, works: site.works.map((w, i) => (i ? w : { ...w, title: '<script>x</script>' })) };
     const res = await request(createApp(evil)).get('/');
     expect(res.text).not.toContain('<script>x</script>');
     expect(res.text).toContain('&lt;script&gt;x&lt;/script&gt;');
+  });
+});
+
+describe('demo sash and version', () => {
+  afterEach(() => {
+    delete process.env.APP_VERSION;
+  });
+
+  it('wears the DEMO sash while the content is placeholder data', async () => {
+    const res = await request(app()).get('/');
+    expect(res.text).toContain('class="sash"');
+    expect(res.text).toContain('<body class="has-sash">');
+  });
+
+  it('drops the sash once the content is real', async () => {
+    const res = await request(createApp({ ...site, demo: false })).get('/');
+    expect(res.text).not.toContain('class="sash"');
+    expect(res.text).toContain('<body>');
+  });
+
+  it('shows the release in the footer as the deploy smoke test expects it', async () => {
+    process.env.APP_VERSION = '2026.11.08.4';
+    const res = await request(app()).get('/');
+    // deploy-production.yml greps for exactly this.
+    expect(res.text).toContain('<span class="ver">v2026.11.08.4</span>');
+  });
+
+  it('says dev for a local build rather than inventing a release', async () => {
+    const res = await request(app()).get('/');
+    expect(res.text).toContain('<span class="ver">dev</span>');
   });
 });
 
@@ -150,6 +180,6 @@ describe('unknown paths', () => {
 
   it('cannot read outside public/', async () => {
     expect((await request(app()).get('/..%2fpackage.json')).status).toBe(404);
-    expect((await request(app()).get('/img/..%2f..%2fcontent%2fsite.json')).status).toBe(404);
+    expect((await request(app()).get('/img/..%2f..%2fcontent%2fbio.json')).status).toBe(404);
   });
 });

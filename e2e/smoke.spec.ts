@@ -124,3 +124,32 @@ for (const scheme of ['light', 'dark'] as const) {
     else expect(lum).toBeLessThan(40);
   });
 }
+
+test.describe('the demo sash', () => {
+  for (const [name, viewport] of [['phone', { width: 375, height: 740 }], ['desktop', { width: 1440, height: 900 }]] as const) {
+    test(`never covers a section link (${name})`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await page.goto('/');
+      const sash = page.locator('.sash span');
+      await expect(sash).toBeVisible();
+      // The links must stay tappable: the element at each link's centre is the link.
+      for (const name of ['Works', 'Exhibitions', 'About']) {
+        const link = page.locator('.bar nav').getByRole('link', { name });
+        const b = (await link.boundingBox())!;
+        const hit = await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.textContent, [b.x + b.width / 2, b.y + b.height / 2]);
+        expect(hit).toBe(name);
+      }
+      // The sash's own corner stays clear of the links' boxes (it is rotated, so
+      // check the visible band against the last link).
+      const about = (await page.locator('.bar nav a').last().boundingBox())!;
+      const sashBox = (await page.locator('.sash').boundingBox())!;
+      const bandStartsAt = sashBox.x + sashBox.width * 0.25;
+      expect(about.x + about.width).toBeLessThanOrEqual(bandStartsAt + 1);
+    });
+  }
+});
+
+test('the footer names the build', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('footer .ver')).toHaveText(/^(dev|v\d{4}\.\d{2}\.\d{2}\.\d+)$/);
+});

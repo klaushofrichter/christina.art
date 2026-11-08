@@ -18,7 +18,14 @@ and enlarged on a tap, recent and upcoming exhibitions, and a short about
 section with contact details. Muted and slow by design, and built for phones
 first.
 
-All text is in [`content/site.json`](content/site.json); the pictures go
+All text is in three files under [`content/`](content/), read and checked at
+build time (so in every deploy) and compiled into the image:
+[`bio.json`](content/bio.json) (name, tagline, bio, email),
+[`works.json`](content/works.json) (which pictures, in what order, with
+title, year and medium) and [`exhibitions.json`](content/exhibitions.json).
+They can be replaced from elsewhere before a deploy; bad data fails the build.
+While any of them says `"placeholder": true`, the page wears a DEMO sash. The
+footer shows the release, e.g. `v2026.11.08.4`. The pictures go
 through `npm run images` (see `CLAUDE.md`), which strips every bit of photo
 metadata before anything reaches this public repository.
 
