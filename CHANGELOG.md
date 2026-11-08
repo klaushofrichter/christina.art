@@ -18,11 +18,8 @@ this file is where notes are written *before* a release, not an archive.
      Leave the section genuinely empty when there is nothing to say: every
      non-blank line under the heading is published, placeholders included.
 
-     Currently empty. Last released: v2026.11.08.5. -->
+     Last released: v2026.11.08.6. -->
 ## [Unreleased]
 
 The enlarged view keeps its words at the bottom of the screen: the title,
 and under it the count between the arrows (‹ 2 / 6 ›).
-
-A backup copy of the site is published on GitHub Pages after every release and
-daily: https://klaushofrichter.github.io/christina.art/
