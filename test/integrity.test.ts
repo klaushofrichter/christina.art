@@ -116,6 +116,7 @@ describe('transport', () => {
 describe('footer', () => {
   it('credits Skylar.Technology with a link', async () => {
     const res = await request(app()).get('/');
-    expect(res.text).toContain('powered by <a href="https://www.skylar.technology">Skylar.Technology</a>');
+    // On one line with the © and the version.
+    expect(res.text).toMatch(/<p>© \d{4} [^<]+<span class="ver">[^<]+<\/span><span class="powered">powered by <a href="https:\/\/www\.skylar\.technology">Skylar\.Technology<\/a><\/span><\/p>/);
   });
 });

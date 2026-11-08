@@ -58,7 +58,9 @@ a cloud sandbox, Node needs `NODE_USE_ENV_PROXY=1` and
 export) is blocked there, `sheets.googleapis.com` is not.
 
 **The DEMO sash** (cams.skylar.technology's amber corner sash) shows while
-any of the three files has `"placeholder": true`. The bio, titles, years and
+any of the three files has `"placeholder": true`, on the page and again inside
+the lightbox (a modal `<dialog>` covers the page's; Close moves to the top
+left while it shows). The bio, titles, years and
 exhibitions in them now are **placeholders Klaus asked to be made up**
 (2026-11-08); don't present them as fact anywhere else. When real data
 arrives, drop the flag and the sash goes with it. The email address is real.

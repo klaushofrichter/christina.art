@@ -64,6 +64,26 @@ test('nothing jumps while the page loads (layout shift)', async ({ page }) => {
   expect(cls).toBeLessThan(0.02);
 });
 
+test('every work holds its place before its picture arrives', async ({ page }) => {
+  // Hold back every picture, as a slow network would. Each work must already
+  // take the box its picture will fill: in Firefox and Safari an unsized lazy
+  // picture took none, the page grew as they arrived, and a section link
+  // stopped short of its section.
+  await page.route('**/img/**', () => {});
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  const boxes = await page.locator('figure.work .frame img').evaluateAll((imgs) =>
+    imgs.map((img) => {
+      const r = img.getBoundingClientRect();
+      return { w: r.width, h: r.height, aspect: Number(img.getAttribute('width')) / Number(img.getAttribute('height')) };
+    }),
+  );
+  expect(boxes.length).toBeGreaterThan(0);
+  for (const b of boxes) {
+    expect(b.h, 'a picture with no height before it loads').toBeGreaterThan(100);
+    expect(b.w / b.h).toBeCloseTo(b.aspect, 1);
+  }
+});
+
 test('a phone fetches small text and pictures sized for its screen', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'phone projects only');
   await page.goto('/', { waitUntil: 'load' });
@@ -114,7 +134,7 @@ test('no console errors or CSP violations through a full visit', async ({ page, 
 test.describe('the demo sash', () => {
   test('never covers a section link', async ({ page }) => {
     await page.goto('/');
-    const sash = page.locator('.sash span');
+    const sash = page.locator('body > .sash span');
     test.skip((await sash.count()) === 0, 'content is not placeholder data: no sash');
     await expect(sash).toBeVisible();
     // The links stay tappable: the element at each link's centre is the link.
@@ -126,7 +146,26 @@ test.describe('the demo sash', () => {
     }
     // And the rotated band starts clear of the last link.
     const about = (await page.locator('.bar nav a').last().boundingBox())!;
-    const box = (await page.locator('.sash').boundingBox())!;
+    const box = (await page.locator('body > .sash').boundingBox())!;
     expect(about.x + about.width).toBeLessThanOrEqual(box.x + box.width * 0.25 + 1);
+  });
+
+  test('shows in the enlarged view too, clear of Close', async ({ page, isMobile }) => {
+    await page.goto('/');
+    test.skip((await page.locator('.sash').count()) === 0, 'content is not placeholder data: no sash');
+    const opener = page.locator('figure.work .frame').first();
+    if (isMobile) await opener.tap();
+    else await opener.click();
+    const dialog = page.locator('dialog.lightbox');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('.sash span')).toBeVisible();
+    // Close and the sash's corner do not overlap.
+    const close = (await dialog.locator('.lb-close').boundingBox())!;
+    const box = (await dialog.locator('.sash').boundingBox())!;
+    const apart =
+      close.x + close.width <= box.x || box.x + box.width <= close.x || close.y + close.height <= box.y || box.y + box.height <= close.y;
+    expect(apart).toBe(true);
+    await dialog.locator('.lb-close').click();
+    await expect(dialog).toBeHidden();
   });
 });

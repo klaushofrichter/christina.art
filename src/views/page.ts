@@ -65,7 +65,9 @@ export function versionLabel(version: string = appVersion()): string {
 
 /** The demo sash, after cams.skylar.technology's: amber stripes across the
  *  top right corner, a label rather than a link, never in the way of a tap.
- *  Shown while any content file is still placeholder data. */
+ *  Shown while any content file is still placeholder data, on the page and
+ *  again inside the enlarged view (a modal <dialog> sits in the top layer,
+ *  above anything on the page, so it needs its own). */
 function sash(site: Site): string {
   if (!site.demo) return '';
   return `<div class="sash" role="note" aria-label="Demo: the biography, titles and exhibitions on this page are placeholders">
@@ -113,8 +115,9 @@ ${picture(w.slug, w.image, w.title, workSizes(w.image), { eager: i === 0 })}
 <meta name="theme-color" content="#f3efe9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1c1a18" media="(prefers-color-scheme: dark)">
 <link rel="canonical" href="${CANONICAL_ORIGIN}/">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta property="og:type" content="website">
 <meta property="og:title" content="${esc(site.artist)}">
@@ -168,12 +171,11 @@ ${site.about.map((p) => `<p class="reveal">${esc(p)}</p>`).join('\n')}
 </main>
 
 <footer class="foot">
-<p>© ${year} ${esc(site.artist)}<span class="ver">${esc(versionLabel())}</span></p>
-<p class="powered">powered by <a href="https://www.skylar.technology">Skylar.Technology</a></p>
+<p>© ${year} ${esc(site.artist)}<span class="ver">${esc(versionLabel())}</span><span class="powered">powered by <a href="https://www.skylar.technology">Skylar.Technology</a></span></p>
 </footer>
 
 <dialog class="lightbox" aria-label="Work, enlarged">
-<figure>
+${sash(site)}<figure>
 <div class="stage"></div>
 <figcaption><span class="title"></span><span class="meta"></span><span class="count"></span></figcaption>
 </figure>
@@ -194,7 +196,7 @@ export function renderNotFound(site: Site, assets: Assets): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Not found · ${esc(site.artist)}</title>
 <meta name="robots" content="noindex">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="stylesheet" href="/site.css?v=${assets.css}">
 </head>
 <body class="notfound">
