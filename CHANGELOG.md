@@ -18,8 +18,5 @@ this file is where notes are written *before* a release, not an archive.
      Leave the section genuinely empty when there is nothing to say: every
      non-blank line under the heading is published, placeholders included.
 
-     Last released: v2026.11.08.6. -->
+     Currently empty. Last released: v2026.11.08.7. -->
 ## [Unreleased]
-
-The enlarged view keeps its words at the bottom of the screen: the title,
-and under it the count between the arrows (‹ 2 / 6 ›).
