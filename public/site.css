@@ -361,12 +361,16 @@ body.locked { overflow: hidden; }
 
 /* ---- version in the footer ---- */
 
-.ver { margin-left: 0.9em; padding-left: 0.9em; border-left: 1px solid var(--line); letter-spacing: 0.1em; }
+/* One line: © name | version | powered by. A phone has no room for all
+   three, so there the credit takes its own line, without a divider. */
+.ver, .foot .powered { display: inline-block; margin-left: 0.9em; padding-left: 0.9em; border-left: 1px solid var(--line); letter-spacing: 0.1em; }
+@media (max-width: 559px) {
+  .foot .powered { display: block; margin: 8px 0 0; padding: 0; border: 0; }
+}
 
 /* ---- powered by ---- */
 
 .foot p { margin: 0; }
-.foot .powered { margin-top: 10px; }
 .foot .powered a { color: var(--muted); text-decoration-color: var(--line); }
 .foot .powered a:hover { color: var(--accent-text); text-decoration-color: var(--accent); }
 

@@ -171,8 +171,7 @@ ${site.about.map((p) => `<p class="reveal">${esc(p)}</p>`).join('\n')}
 </main>
 
 <footer class="foot">
-<p>© ${year} ${esc(site.artist)}<span class="ver">${esc(versionLabel())}</span></p>
-<p class="powered">powered by <a href="https://www.skylar.technology">Skylar.Technology</a></p>
+<p>© ${year} ${esc(site.artist)}<span class="ver">${esc(versionLabel())}</span><span class="powered">powered by <a href="https://www.skylar.technology">Skylar.Technology</a></span></p>
 </footer>
 
 <dialog class="lightbox" aria-label="Work, enlarged">
