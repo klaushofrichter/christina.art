@@ -175,7 +175,7 @@ ${site.about.map((p) => `<p class="reveal">${esc(p)}</p>`).join('\n')}
 </footer>
 
 <dialog class="lightbox" aria-label="Work, enlarged">
-${sash(site)}<figure>
+<figure>
 <div class="stage"></div>
 <figcaption><span class="title"></span><span class="meta"></span><span class="count"></span></figcaption>
 </figure>
