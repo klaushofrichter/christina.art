@@ -35,6 +35,28 @@ Docker build**, never at runtime, and they can be fed from elsewhere ahead of
 a deploy (Klaus, 2026-11-08). Bad data fails the build, naming the file,
 before anything rolls out.
 
+**The content can be edited in the Google Sheet "content"**
+(https://docs.google.com/spreadsheets/d/1hdMzpoa5A8JrmHo70GWsRPYjOqpItfwZVrvAmQOGS_c/,
+owned by klaus.hofrichter@gmail.com, klaus@klaushofrichter.net is an editor):
+tabs `meta` (each file's `_note` and `placeholder`), `bio` (key | value, one
+`bio` row per paragraph), `works` and `exhibitions` (one row per entry; the
+layout is documented in `scripts/sheet-format.ts`). The `Info` tab is Klaus's.
+`npm run sheet` reads it and writes the three files **byte for byte** in the
+repository's format, after checking the result with the build's own loader;
+`npm run sheet -- --check` only reports differences. It is run by hand before
+a deploy, never automatically. `npm run sheet:csv` goes the other way (JSON to
+one CSV per tab). The round trip is tested in `test/sheet.test.ts`.
+
+Access: the script reads through the Sheets API with an OAuth
+`authorized_user` credential from `GWS_CREDENTIALS_JSON` (or the file in
+`GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE`), the same credential the
+`@googleworkspace/cli` (`gws`) uses; cloud sessions have it as an environment
+variable. To use `gws` itself, write the variable to a 0600 file and point
+`GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE` at it. Never print the credential. In
+a cloud sandbox, Node needs `NODE_USE_ENV_PROXY=1` and
+`NODE_EXTRA_CA_CERTS=/root/.ccr/ca-bundle.crt`; `docs.google.com` (the CSV
+export) is blocked there, `sheets.googleapis.com` is not.
+
 **The DEMO sash** (cams.skylar.technology's amber corner sash) shows while
 any of the three files has `"placeholder": true`. The bio, titles, years and
 exhibitions in them now are **placeholders Klaus asked to be made up**

@@ -9,7 +9,9 @@
     "dev": "tsx src/server.ts",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "images": "tsx scripts/images.ts"
+    "images": "tsx scripts/images.ts",
+    "sheet": "tsx scripts/sheet-to-json.ts",
+    "sheet:csv": "tsx scripts/json-to-sheet-csv.ts"
   },
   "dependencies": {
     "compression": "^1.8.2",

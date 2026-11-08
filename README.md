@@ -50,6 +50,7 @@ npm ci
 npm run dev          # http://localhost:8080
 npm test             # unit tests (vitest + supertest), incl. a no-metadata check on every picture
 npm run images       # import images-incoming/ and assets/c1.png, rebuild public/img
+npm run sheet        # content/*.json from the Google Sheet "content" (--check to compare only)
 npm run test:e2e     # Playwright in four browsers; builds and starts the server itself
 BASE_URL=https://christinaschwarz.art npx playwright test --grep @live   # the live site
 ```
