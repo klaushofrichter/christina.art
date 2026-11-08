@@ -31,6 +31,7 @@ configuration it reads is `PORT` (and `APP_VERSION`, stamped by the deploy).
 ## Pictures: `npm run images`, and never any metadata
 
 1. New works go into `images-incoming/`, a new portrait to `assets/c1.png`.
+   Both folders are git-ignored: they are inputs, never committed.
 2. `npm run images` (`scripts/images.ts`) turns each into a **master** in
    `originals/` (upright, sRGB, ≤3200px, JPEG) and removes the incoming
    file, then writes **derivatives** to `public/img`: AVIF, WebP and JPEG at
