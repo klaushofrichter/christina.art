@@ -1,2 +1,53 @@
-# christina.art
-Website for christinaschwarz.art, served from the kube-setup k3s cluster
+# christinaschwarz.art
+
+[![Release](https://img.shields.io/github/v/release/klaushofrichter/christina.art?label=release&color=blue)](https://github.com/klaushofrichter/christina.art/releases)
+[![PR checks](https://github.com/klaushofrichter/christina.art/actions/workflows/production-checks.yml/badge.svg)](https://github.com/klaushofrichter/christina.art/actions/workflows/production-checks.yml)
+[![Build and publish image](https://github.com/klaushofrichter/christina.art/actions/workflows/build-push.yml/badge.svg?branch=main)](https://github.com/klaushofrichter/christina.art/actions/workflows/build-push.yml)
+[![Deploy production](https://github.com/klaushofrichter/christina.art/actions/workflows/deploy-production.yml/badge.svg?branch=production)](https://github.com/klaushofrichter/christina.art/actions/workflows/deploy-production.yml)
+[![Dependabot](https://img.shields.io/badge/dependabot-enabled-025E8C?logo=dependabot&logoColor=white)](https://github.com/klaushofrichter/christina.art/security/dependabot)
+
+<!-- No version numbers in this text: they go stale. The release badge shows
+     the last released version; GET /health reports the running one.
+     The Dependabot badge is static: GitHub has no status endpoint for it, so
+     it asserts that alerts, security updates and .github/dependabot.yml are in
+     place rather than checking them. -->
+
+The website of the artist Christina Schwarz, served at
+[christinaschwarz.art](https://christinaschwarz.art). For now a placeholder:
+her name and "website coming soon".
+
+An Express/TypeScript app, run as a [Knative](https://knative.dev/) Service on
+a self-hosted single-node k3s cluster (see
+[`klaushofrichter/kube-setup`](https://github.com/klaushofrichter/kube-setup)).
+Public, no login, no secrets; the only configuration it reads is `PORT`.
+
+## Hostnames
+
+- `christinaschwarz.art` is the one canonical name.
+- `www.christinaschwarz.art` redirects to it permanently (301), keeping path
+  and query. The app does this itself for any request whose host starts with
+  `www.` (`src/canonical.ts`); the cluster may also do it in front of Knative,
+  see `CLAUDE.md`.
+
+## Running it
+
+```bash
+npm ci
+npm run dev          # http://localhost:8080
+npm test             # unit tests (vitest + supertest)
+npm run test:e2e     # Playwright; builds and starts the server itself
+```
+
+`GET /health` answers `{"status":"ok","service":"christina-art","version":"…"}`.
+The version is `dev` locally and the release version in production.
+
+## Branches and deploys
+
+| Branch | What happens |
+| --- | --- |
+| feature branch → PR | `production-checks.yml`: `test` (unit, build, audit, image built and checked non-root), `e2e`, `codeql` |
+| `main` | `build-push.yml` publishes `ghcr.io/klaushofrichter/christina.art:main`, and nothing else. Never deployed. |
+| `production` (protected, PR from `main`) | `deploy-production.yml` on the in-cluster runner: version, build, push, update the kube-setup manifest, apply, smoke-test, release |
+
+Releases are tagged `vYYYY.MM.DD.N` (Central time) and carry a
+"Verified at release" section with what the deploy observed live.

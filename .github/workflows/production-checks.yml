@@ -1,0 +1,129 @@
+name: PR checks
+
+# PRs to both branches: Dependabot's PRs land on main, and build-push.yml only
+# runs after a merge, so without main here dependency bumps would be first
+# tested on the way to production.
+on:
+  pull_request:
+    branches: [main, production]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm test
+
+      - run: npm run build
+
+      # In the `test` job on purpose: `test` is a required check on
+      # production, so a vulnerable dependency blocks the merge. As its own
+      # job it would be advisory.
+      - run: npm audit --audit-level=high
+
+      # The image is otherwise first built by the deploy, after the merge.
+      # Build it here, then prove it is non-root on its own: run it with NO
+      # --user (the cluster's runAsUser would mask a root image) and ask it.
+      - name: Build the image and check it runs as uid 1000
+        run: |
+          set -euo pipefail
+          docker build --build-arg APP_VERSION=pr-check -t christina-art:pr .
+          uid=$(docker run --rm --entrypoint id christina-art:pr -u)
+          gid=$(docker run --rm --entrypoint id christina-art:pr -g)
+          echo "image runs as ${uid}:${gid}"
+          [ "$uid:$gid" = "1000:1000" ] || { echo "::error::image runs as ${uid}:${gid}, expected 1000:1000"; exit 1; }
+          docker run -d --name pr -p 8080:8080 christina-art:pr
+          for i in $(seq 1 20); do
+            if curl -fs http://localhost:8080/health -o /tmp/health.json; then break; fi
+            sleep 1
+          done
+          cat /tmp/health.json; echo
+          grep -q '"version":"pr-check"' /tmp/health.json \
+            || { echo "::error::container did not report the stamped version"; docker logs pr; exit 1; }
+          docker rm -f pr
+
+      # Only on the way to production: that merge cuts a release, and notes
+      # left under [Unreleased] would be published a second time.
+      - name: Refuse notes that have already been published
+        if: github.base_ref == 'production'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/check-changelog.sh
+
+  e2e:
+    # On GitHub's runners, not in the deploy: installing a browser on the
+    # in-cluster runner (512Mi) OOM-kills it. Against a locally started
+    # server, so a broken build is caught before it is merged.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+
+      - run: npm ci
+
+      # `--with-deps` runs `apt-get update`, which also reads the Google
+      # Chrome source the runner image ships. One bad index there fails the
+      # whole job (it did, 2026-09-09, in art), so drop the source we don't use.
+      - name: Install Chromium for Playwright
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list \
+                     /etc/apt/sources.list.d/google-chrome.sources
+          npx playwright install --with-deps chromium
+
+      # Builds, starts the server, waits for /health and stops it again, all
+      # from webServer in playwright.config.ts.
+      - name: Run the smoke test
+        run: npm run test:e2e
+
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+
+      - uses: github/codeql-action/analyze@v4
+        with:
+          output: sarif-results
+          upload: never
+
+      # analyze does not fail on findings by itself; this is the gate.
+      - name: Fail if CodeQL found any results
+        run: |
+          set -euo pipefail
+          total=0
+          for f in sarif-results/*.sarif; do
+            count=$(jq '[.runs[].results[]] | length' "$f")
+            total=$((total + count))
+            jq -r '.runs[] as $run | $run.results[]
+              | . as $r
+              | ($run.tool.driver.rules[$r.rule.index // 0].id // $r.ruleId) as $rule
+              | ($r.locations[0].physicalLocation) as $loc
+              | "\($loc.artifactLocation.uri):\($loc.region.startLine // 0)  [\($rule)]  \($r.message.text)"' "$f" || true
+          done
+          echo "CodeQL findings: $total"
+          if [ "$total" -gt 0 ]; then
+            echo "::error::CodeQL found $total finding(s) — blocking merge"
+            exit 1
+          fi

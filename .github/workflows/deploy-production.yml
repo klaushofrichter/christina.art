@@ -1,0 +1,207 @@
+name: Deploy production
+
+on:
+  push:
+    branches: [production]
+
+# One deploy at a time: two overlapping runs would race for the same version
+# number and the same manifest commit.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # create the release tag
+  packages: write
+
+env:
+  IMAGE: ghcr.io/klaushofrichter/christina.art
+  NAMESPACE: christina-art
+  KSVC: christina-art
+  MANIFEST: manifests/christina-art/christina-art-ksvc.yaml
+  BASE: https://christinaschwarz.art
+  WWW: https://www.christinaschwarz.art
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, k3s]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # release notes are computed from history and tags
+
+      - name: Install kubectl and configure in-cluster access
+        run: |
+          set -euo pipefail
+          if ! command -v kubectl >/dev/null 2>&1; then
+            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            chmod +x kubectl
+            sudo mv kubectl /usr/local/bin/kubectl
+          fi
+          kubectl version --client
+          SA_DIR=/var/run/secrets/kubernetes.io/serviceaccount
+          kubectl config set-cluster in-cluster \
+            --server=https://kubernetes.default.svc \
+            --certificate-authority="${SA_DIR}/ca.crt"
+          kubectl config set-credentials deploy-sa --token="$(cat "${SA_DIR}/token")"
+          kubectl config set-context in-cluster --cluster=in-cluster --user=deploy-sa --namespace="$NAMESPACE"
+          kubectl config use-context in-cluster
+
+      - name: Generate the version
+        id: ver
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Calendar versioning, YYYY.MM.DD.N, dated in Central time so an
+          # evening deploy is not filed under tomorrow. N counts the releases
+          # that already exist for the day: the tags are the state.
+          DATE=$(TZ=America/Chicago date +%Y.%m.%d)
+          # Not under `|| true` as a whole: if the lookup fails, a counter
+          # silently reset to .1 would overwrite a published image tag. Only
+          # the grep may "fail", where no match is a legitimate zero.
+          RELEASES=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 200 \
+                       --json tagName -q '.[].tagName')
+          TODAY=$(printf '%s\n' "$RELEASES" | grep -c "^v${DATE}\." || true)
+          VERSION="${DATE}.$((TODAY + 1))"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Releasing v$VERSION"
+
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          build-args: |
+            APP_VERSION=${{ steps.ver.outputs.version }}
+          # The only place these three are written. `:latest` belongs here,
+          # not on a main build: it has to mean what is deployed.
+          tags: |
+            ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ env.IMAGE }}:v${{ steps.ver.outputs.version }}
+            ${{ env.IMAGE }}:latest
+
+      - name: Prune old Docker images
+        run: docker system prune -af --filter "until=168h" || true
+
+      - name: Update kube-setup manifest and deploy
+        env:
+          KUBE_SETUP_DEPLOY_TOKEN: ${{ secrets.KUBE_SETUP_DEPLOY_TOKEN }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/kube-setup-deploy
+          git clone "https://x-access-token:${KUBE_SETUP_DEPLOY_TOKEN}@github.com/klaushofrichter/kube-setup.git" /tmp/kube-setup-deploy
+          cd /tmp/kube-setup-deploy
+          # Matches only this app's image, on purpose: if the manifest still
+          # names some other image, the grep below fails the deploy loudly
+          # instead of this rewriting a container it does not own.
+          sed -i "s|image: ${IMAGE}:.*|image: ${IMAGE}:${SHA}|" "$MANIFEST"
+          grep -q "image: ${IMAGE}:${SHA}$" "$MANIFEST" \
+            || { echo "::error::manifest image line did not update to ${SHA}"; exit 1; }
+          git config user.name "christina-art-deploy-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add "$MANIFEST"
+          if git diff --cached --quiet; then
+            echo "No manifest change (image tag already up to date) — skipping commit/push."
+          else
+            git commit -m "Deploy christina-art ${SHA}"
+            # Push before apply, always: an applied-but-unpushed change is
+            # reverted by the next deploy from main.
+            git push
+          fi
+          kubectl apply -f "$MANIFEST"
+          rm -rf /tmp/kube-setup-deploy
+
+      - name: Verify rollout
+        run: |
+          set -euo pipefail
+          kubectl wait --for=condition=Ready "ksvc/$KSVC" -n "$NAMESPACE" --timeout=120s
+          kubectl get ksvc "$KSVC" -n "$NAMESPACE"
+
+      # curl, not Playwright: a browser install OOM-kills this runner. The
+      # Playwright suite ran in production-checks.yml before the merge.
+      - name: Smoke-test the public endpoints
+        id: smoke
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          set -euo pipefail
+          # Wait for the *new* build, not merely for a 200: Knative can answer
+          # from the previous revision for a while after Ready.
+          # sed, not jq: the runner has no jq.
+          served=""
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /tmp/health.json -w "%{http_code}" "$BASE/health" || true)
+            if [ "$code" = "200" ]; then
+              served=$(sed -n 's/.*"version":"\([^"]*\)".*/\1/p' /tmp/health.json)
+              [ "$served" = "$VERSION" ] && echo "version ok: $served" && break
+              echo "serving ${served:-unknown}, waiting for ${VERSION} (${i}/20)"
+            else
+              echo "health not ready (HTTP ${code}), retry ${i}/20"
+            fi
+            sleep 6
+          done
+          [ "$code" = "200" ] || { echo "::error::/health did not return 200"; exit 1; }
+          [ "$served" = "$VERSION" ] \
+            || { echo "::error::/health still reports ${served} after 2 minutes, expected ${VERSION}"; exit 1; }
+
+          # A public page: 200 with her name on it.
+          page=$(curl -s -o /tmp/page.html -w "%{http_code}" "$BASE/")
+          [ "$page" = "200" ] || { echo "::error::public page returned ${page}"; exit 1; }
+          grep -q '<h1>Christina Schwarz</h1>' /tmp/page.html \
+            || { echo "::error::page does not carry the expected heading"; exit 1; }
+          echo "public page ok"
+
+          # www must redirect permanently to the bare name, path and query
+          # kept. Traefik answers a GET with 301 (308 for HEAD/POST), the app
+          # with 301; accept either permanent code, and assert the Location,
+          # which is the part that carries the behaviour.
+          probe="/release-check?v=${VERSION}"
+          read -r wcode wloc < <(curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' "${WWW}${probe}" || true)
+          case "$wcode" in 301|308) ;; *) echo "::error::${WWW}${probe} returned ${wcode}, expected 301"; exit 1;; esac
+          [ "$wloc" = "${BASE}${probe}" ] \
+            || { echo "::error::www redirected to '${wloc}', expected '${BASE}${probe}'"; exit 1; }
+          echo "www redirect ok: ${wcode} -> ${wloc}"
+
+          # Hand the release step what this deploy observed, so the notes
+          # carry evidence rather than an assertion.
+          {
+            echo "served=$served"
+            echo "page=$page"
+            echo "www_code=$wcode"
+            echo "www_location=$wloc"
+            echo "checked_at=$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Tag the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.ver.outputs.version }}
+          SMOKE_SERVED: ${{ steps.smoke.outputs.served }}
+          SMOKE_PAGE: ${{ steps.smoke.outputs.page }}
+          SMOKE_WWW_CODE: ${{ steps.smoke.outputs.www_code }}
+          SMOKE_WWW_LOCATION: ${{ steps.smoke.outputs.www_location }}
+          SMOKE_AT: ${{ steps.smoke.outputs.checked_at }}
+        run: |
+          set -euo pipefail
+          TAG="v${VERSION}"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "$TAG already released - skipping."
+            exit 0
+          fi
+          scripts/release-notes.sh > /tmp/notes.md
+          cat /tmp/notes.md
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "$TAG" \
+            --notes-file /tmp/notes.md
+          echo "Released $TAG"
