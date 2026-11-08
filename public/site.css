@@ -106,6 +106,15 @@ a:hover { color: var(--accent); text-decoration-color: var(--accent); }
 }
 .bar nav a:hover { color: var(--ink); }
 
+/* A phone has no room for the name and three links side by side: the links
+   take the whole bar, centred, and the big name above says who this is. */
+@media (max-width: 559px) {
+  .mark { display: none; }
+  .bar { justify-content: center; }
+  .bar nav { gap: 26px; }
+  .bar nav a { letter-spacing: 0.14em; }
+}
+
 /* ---- intro ---- */
 
 .intro {
@@ -215,7 +224,6 @@ h3 { font-weight: 400; margin: 0; }
 .about-body { display: grid; gap: 36px; }
 .portrait img { width: 100%; max-width: 420px; box-shadow: var(--frame-shadow); }
 .bio p { margin: 0 0 1.1em; max-width: 34em; }
-.bio > p:first-child::first-letter { color: var(--accent); }
 
 @media (min-width: 760px) {
   .about-body { grid-template-columns: minmax(240px, 360px) 1fr; gap: 56px; align-items: start; }
@@ -251,7 +259,7 @@ h3 { font-weight: 400; margin: 0; }
   margin: 0;
   padding: 0;
   border: 0;
-  background: rgba(24, 22, 20, 0.97);
+  background: #181614;
   color: #e9e3da;
   overscroll-behavior: contain;
 }

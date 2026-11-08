@@ -156,7 +156,7 @@ ${site.about.map((p) => `<p class="reveal">${esc(p)}</p>`).join('\n')}
 </main>
 
 <footer class="foot">
-<p>© ${year} ${esc(site.artist)}. All works shown are the artist's own.</p>
+<p>© ${year} ${esc(site.artist)}</p>
 </footer>
 
 <dialog class="lightbox" aria-label="Work, enlarged">
