@@ -143,7 +143,7 @@ describe('static files', () => {
   });
 
   it('serves the favicon set', async () => {
-    for (const p of ['/favicon.ico', '/favicon.svg', '/apple-touch-icon.png']) {
+    for (const p of ['/favicon.ico', '/favicon-32.png', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png']) {
       expect((await request(app()).get(p)).status, p).toBe(200);
     }
   });

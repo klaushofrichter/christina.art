@@ -106,8 +106,9 @@ ${picture(w.slug, w.image, w.title, workSizes, { eager: i === 0 })}
 <meta name="theme-color" content="#f3efe9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1c1a18" media="(prefers-color-scheme: dark)">
 <link rel="canonical" href="${CANONICAL_ORIGIN}/">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta property="og:type" content="website">
 <meta property="og:title" content="${esc(site.artist)}">
@@ -186,7 +187,7 @@ export function renderNotFound(site: Site, assets: Assets): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Not found · ${esc(site.artist)}</title>
 <meta name="robots" content="noindex">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="stylesheet" href="/site.css?v=${assets.css}">
 </head>
 <body class="notfound">
