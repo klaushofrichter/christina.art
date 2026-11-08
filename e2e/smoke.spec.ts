@@ -42,6 +42,12 @@ test('a work opens large, pages with the keyboard, and closes with Escape', asyn
   const box = page.locator('dialog.lightbox');
   await expect(box).toBeVisible();
   await expect(box.locator('.count')).toHaveText(`1 / ${count}`);
+  await expect(box.locator('.title')).toHaveText(await page.locator('figure.work .title').first().innerText());
+  // The clone is told it is drawn full-width, so it takes a larger file.
+  const big = box.locator('.stage img');
+  await expect(big).not.toHaveClass(/pending/);
+  const w = await big.evaluate((img: HTMLImageElement) => Number(img.currentSrc.match(/-(\d+)\.[0-9a-f]{10}\./)![1]));
+  expect(w).toBeGreaterThanOrEqual(1200);
   await page.keyboard.press('ArrowRight');
   await expect(box.locator('.count')).toHaveText(`2 / ${count}`);
   await page.keyboard.press('ArrowLeft');

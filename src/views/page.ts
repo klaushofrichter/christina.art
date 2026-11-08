@@ -72,19 +72,6 @@ ${picture(w.slug, w.image, w.title, workSizes, { eager: i === 0 })}
     })
     .join('\n');
 
-  const lightboxData = JSON.stringify(
-    site.works.map((w) => ({
-      title: w.title,
-      meta: [w.year, w.medium, w.size].filter(Boolean).join(' · '),
-      slug: w.slug,
-      hash: w.image.hash,
-      widths: w.image.widths,
-      width: w.image.width,
-      height: w.image.height,
-      color: w.image.color,
-    })),
-  ).replace(/</g, '\\u003c');
-
   const portrait = site.portrait
     ? `<div class="portrait reveal">${picture('artist', site.portrait, `Portrait of ${site.artist}`, '(min-width: 900px) 360px, (min-width: 600px) 45vw, calc(100vw - 32px)')}</div>`
     : '';
@@ -168,7 +155,6 @@ ${site.about.map((p) => `<p class="reveal">${esc(p)}</p>`).join('\n')}
 <button class="lb-prev" type="button" aria-label="Previous work">‹</button>
 <button class="lb-next" type="button" aria-label="Next work">›</button>
 </dialog>
-<script type="application/json" id="works-data">${lightboxData}</script>
 </body>
 </html>
 `;

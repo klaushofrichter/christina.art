@@ -48,10 +48,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ---- lightbox ----
   const dialog = document.querySelector('.lightbox');
-  const dataEl = document.getElementById('works-data');
-  if (!dialog || !dataEl || typeof dialog.showModal !== 'function') return;
+  if (!dialog || typeof dialog.showModal !== 'function') return;
 
-  const works = JSON.parse(dataEl.textContent);
+  // The enlarged view reuses each work's own <picture>: cloned, then told it
+  // will be drawn full-width, so the browser picks a larger file from the same
+  // srcset. Nothing read from the page is ever turned into markup or a URL
+  // string here, which is what keeps this free of DOM-based injection.
+  const works = Array.from(document.querySelectorAll('figure.work'));
   const stage = dialog.querySelector('.stage');
   const title = dialog.querySelector('.title');
   const meta = dialog.querySelector('.meta');
@@ -59,41 +62,30 @@ document.addEventListener('DOMContentLoaded', () => {
   let index = 0;
   let opener = null;
 
-  const set = (w, ext) => w.widths.map((x) => `/img/${w.slug}-${x}.${w.hash}.${ext} ${x}w`).join(', ');
+  function enlarged(figure) {
+    const pic = figure.querySelector('picture').cloneNode(true);
+    for (const el of pic.querySelectorAll('source, img')) el.sizes = '100vw';
+    const img = pic.querySelector('img');
+    img.loading = 'eager';
+    img.style.backgroundColor = img.dataset.color || '';
+    return pic;
+  }
 
   function render(i) {
     index = (i + works.length) % works.length;
-    const w = works[index];
-    const pic = document.createElement('picture');
-    for (const [type, ext] of [['image/avif', 'avif'], ['image/webp', 'webp']]) {
-      const s = document.createElement('source');
-      s.type = type;
-      s.srcset = set(w, ext);
-      s.sizes = '100vw';
-      pic.append(s);
+    const figure = works[index];
+    const pic = enlarged(figure);
+    const img = pic.querySelector('img');
+    if (!img.complete) {
+      img.classList.add('pending');
+      img.addEventListener('load', () => img.classList.remove('pending'), { once: true });
+    } else {
+      img.classList.remove('pending');
     }
-    const img = document.createElement('img');
-    img.srcset = set(w, 'jpg');
-    img.sizes = '100vw';
-    img.src = `/img/${w.slug}-${w.widths[w.widths.length - 1]}.${w.hash}.jpg`;
-    img.width = w.width;
-    img.height = w.height;
-    img.alt = w.title;
-    img.style.backgroundColor = w.color;
-    img.classList.add('pending');
-    img.addEventListener('load', () => img.classList.remove('pending'), { once: true });
-    pic.append(img);
     stage.replaceChildren(pic);
-    title.textContent = w.title;
-    meta.textContent = w.meta;
+    title.textContent = figure.querySelector('figcaption .title').textContent;
+    meta.textContent = figure.querySelector('figcaption .meta').textContent;
     count.textContent = `${index + 1} / ${works.length}`;
-    // Warm the neighbours so paging feels immediate.
-    for (const n of [index + 1, index - 1]) {
-      const nb = works[(n + works.length) % works.length];
-      const pre = new Image();
-      pre.sizes = '100vw';
-      pre.srcset = set(nb, 'jpg');
-    }
   }
 
   function open(i, el) {
@@ -102,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
     dialog.showModal();
     document.body.classList.add('locked');
     // Back closes the picture, as people expect on a phone.
-    history.pushState({ lightbox: true }, '', `#work-${works[index].slug}`);
+    history.pushState({ lightbox: true }, '', `#view-${index + 1}`);
   }
 
   function close(fromHistory) {
@@ -115,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function step(d) {
     render(index + d);
-    history.replaceState({ lightbox: true }, '', `#work-${works[index].slug}`);
+    history.replaceState({ lightbox: true }, '', `#view-${index + 1}`);
   }
 
   document.querySelectorAll('.frame[data-index]').forEach((a) => {
