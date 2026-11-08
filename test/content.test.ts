@@ -8,18 +8,20 @@ import { dateRange } from '../src/views/page';
 
 const ROOT = path.join(__dirname, '..');
 
-/** A copy of content/ with site.json edited, for the failure cases. */
-function contentWith(edit: (site: Record<string, unknown>) => void): string {
+/** A copy of content/ with one file edited, for the failure cases. */
+function contentWith(file: string, edit: (data: Record<string, unknown>) => void): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'christina-content-'));
   onTestFinished(() => fs.rmSync(dir, { recursive: true, force: true }));
-  fs.copyFileSync(path.join(CONTENT_DIR, 'images.json'), path.join(dir, 'images.json'));
-  const site = JSON.parse(fs.readFileSync(path.join(CONTENT_DIR, 'site.json'), 'utf8'));
-  edit(site);
-  fs.writeFileSync(path.join(dir, 'site.json'), JSON.stringify(site));
+  for (const name of ['bio.json', 'works.json', 'exhibitions.json', 'images.json']) {
+    fs.copyFileSync(path.join(CONTENT_DIR, name), path.join(dir, name));
+  }
+  const data = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
+  edit(data);
+  fs.writeFileSync(path.join(dir, file), JSON.stringify(data));
   return dir;
 }
 
-describe('content/site.json', () => {
+describe('content/*.json', () => {
   it('loads, and every work has its pictures on disk', () => {
     const site = loadSite();
     expect(site.works.length).toBeGreaterThan(0);
@@ -32,20 +34,52 @@ describe('content/site.json', () => {
       }
     }
     expect(site.portrait).not.toBeNull();
+    expect(site.about.length).toBeGreaterThan(0);
   });
 
   it('refuses a work whose picture does not exist', () => {
-    const dir = contentWith((s) => {
-      (s.works as Record<string, unknown>[])[0].image = 'missing';
+    const dir = contentWith('works.json', (d) => {
+      (d.works as Record<string, unknown>[])[0].image = 'missing';
     });
-    expect(() => loadSite(dir)).toThrow(/missing/);
+    expect(() => loadSite(dir)).toThrow(/works\.json.*missing/);
   });
 
   it('refuses an exhibition date that is not YYYY-MM-DD', () => {
-    const dir = contentWith((s) => {
-      (s.exhibitions as Record<string, unknown>[])[0].from = 'March 2027';
+    const dir = contentWith('exhibitions.json', (d) => {
+      (d.exhibitions as Record<string, unknown>[])[0].from = 'March 2027';
     });
-    expect(() => loadSite(dir)).toThrow(/YYYY-MM-DD/);
+    expect(() => loadSite(dir)).toThrow(/exhibitions\.json.*YYYY-MM-DD/);
+  });
+
+  it('refuses a bio without an email', () => {
+    const dir = contentWith('bio.json', (d) => {
+      delete d.email;
+    });
+    expect(() => loadSite(dir)).toThrow(/bio\.json.*email/);
+  });
+
+  it('names the file when one is not valid JSON', () => {
+    const dir = contentWith('bio.json', () => {});
+    fs.writeFileSync(path.join(dir, 'bio.json'), '{ not json');
+    expect(() => loadSite(dir)).toThrow(/content\/bio\.json/);
+  });
+
+  it('is a demo while any one file is still placeholder data', () => {
+    expect(loadSite().demo).toBe(true);
+    let dir = contentWith('works.json', (d) => {
+      d.placeholder = false;
+    });
+    expect(loadSite(dir).demo).toBe(true);
+    // All three real: no sash.
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'christina-real-'));
+    onTestFinished(() => fs.rmSync(dir, { recursive: true, force: true }));
+    fs.copyFileSync(path.join(CONTENT_DIR, 'images.json'), path.join(dir, 'images.json'));
+    for (const name of ['bio.json', 'works.json', 'exhibitions.json']) {
+      const d = JSON.parse(fs.readFileSync(path.join(CONTENT_DIR, name), 'utf8'));
+      delete d.placeholder;
+      fs.writeFileSync(path.join(dir, name), JSON.stringify(d));
+    }
+    expect(loadSite(dir).demo).toBe(false);
   });
 });
 

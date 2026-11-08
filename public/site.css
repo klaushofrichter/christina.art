@@ -307,6 +307,54 @@ h3 { font-weight: 400; margin: 0; }
 
 body.locked { overflow: hidden; }
 
+/* ---- the demo sash (as on cams.skylar.technology) ----
+   Amber stripes with dark ink across the top right corner, the same in both
+   themes. A label, not a control: it never takes a tap. */
+
+:root { --sash: #d97706; --sash-ink: #1f1300; }
+
+.sash {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 210px;
+  height: 210px;
+  overflow: hidden;
+  z-index: 40;
+  pointer-events: none;
+  transform: scale(0.8);
+  transform-origin: right top;
+}
+.sash span {
+  position: absolute;
+  top: 52px;
+  right: -62px;
+  width: 300px;
+  transform: rotate(45deg);
+  text-align: center;
+  padding: 8px 0 7px;
+  background: repeating-linear-gradient(-45deg, var(--sash) 0 10px, color-mix(in srgb, var(--sash) 85%, var(--sash-ink)) 10px 20px);
+  color: var(--sash-ink);
+  font: 800 12px/1.15 var(--sans);
+  letter-spacing: 0.2em;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
+  border-block: 1px solid color-mix(in srgb, var(--sash-ink) 35%, transparent);
+}
+.sash small { display: block; font-weight: 600; font-size: 9.5px; letter-spacing: 0.14em; opacity: 0.85; }
+
+/* Keep the section links clear of the sash's corner. */
+.has-sash .bar { padding-right: 150px; }
+@media (max-width: 559px) {
+  .sash { transform: scale(0.42); }
+  .has-sash .bar { justify-content: flex-start; padding-right: 92px; }
+  .has-sash .bar nav { gap: 18px; }
+  .has-sash .bar nav a { letter-spacing: 0.1em; }
+}
+
+/* ---- version in the footer ---- */
+
+.ver { margin-left: 0.9em; padding-left: 0.9em; border-left: 1px solid var(--line); letter-spacing: 0.1em; }
+
 /* ---- 404 ---- */
 
 .notfound main { min-height: 100svh; display: grid; place-content: center; text-align: center; padding: 24px var(--gutter); }

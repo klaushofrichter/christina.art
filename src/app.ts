@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { healthRouter } from './routes/health';
 import { canonicalHost } from './canonical';
-import { Site, loadSite } from './content';
+import { Site, loadCompiled } from './content';
 import { Assets, renderHome, renderNotFound } from './views/page';
 
 export const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -44,7 +44,7 @@ function assetVersions(dir: string): Assets {
   return { css: v('site.css'), js: v('site.js') };
 }
 
-export function createApp(site: Site = loadSite()): Express {
+export function createApp(site: Site = loadCompiled()): Express {
   const assets = assetVersions(PUBLIC_DIR);
   const app = express();
   app.disable('x-powered-by');

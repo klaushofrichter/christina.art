@@ -46,7 +46,7 @@ printf '\nImage: `%s:%s`\n' "$IMAGE" "$TAG"
 printf '\n### Verified at release\n\n'
 printf -- '- Rollout: `ksvc/christina-art` reached Ready\n'
 printf -- '- `GET %s/health` -> 200, reported version `%s`, matching the build this run stamped\n' "$BASE" "$SMOKE_SERVED"
-printf -- '- `GET %s/` -> %s, with the "Christina Schwarz" heading present\n' "$BASE" "$SMOKE_PAGE"
+printf -- '- `GET %s/` -> %s, with the "Christina Schwarz" heading and the footer showing `v%s`\n' "$BASE" "$SMOKE_PAGE" "$VERSION"
 printf -- '- `GET %s/release-check?v=%s` -> %s to `%s`\n' "$WWW" "$VERSION" "$SMOKE_WWW_CODE" "$SMOKE_WWW_LOCATION"
 printf -- '- Checked at %s by [run %s](%s/%s/actions/runs/%s)\n' \
   "$SMOKE_AT" "$GITHUB_RUN_ID" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"

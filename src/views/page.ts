@@ -1,5 +1,6 @@
 import { CANONICAL_ORIGIN } from '../site';
 import { Exhibition, ImageEntry, Site, splitExhibitions } from '../content';
+import { appVersion } from '../version';
 
 export type Assets = { css: string; js: string };
 
@@ -56,6 +57,23 @@ function exhibitionItem(e: Exhibition): string {
 </li>`;
 }
 
+/** The release as it is named everywhere else: v2026.11.08.3. A local or
+ *  unstamped build says so plainly instead of pretending to be a release. */
+export function versionLabel(version: string = appVersion()): string {
+  return /^\d{4}\.\d{2}\.\d{2}\.\d+$/.test(version) ? `v${version}` : version;
+}
+
+/** The demo sash, after cams.skylar.technology's: amber stripes across the
+ *  top right corner, a label rather than a link, never in the way of a tap.
+ *  Shown while any content file is still placeholder data. */
+function sash(site: Site): string {
+  if (!site.demo) return '';
+  return `<div class="sash" role="note" aria-label="Demo: the biography, titles and exhibitions on this page are placeholders">
+<span>DEMO<small>PLACEHOLDER CONTENT</small></span>
+</div>
+`;
+}
+
 export function renderHome(site: Site, assets: Assets, today: Date = new Date()): string {
   const { upcoming, past } = splitExhibitions(site.exhibitions, today);
   // Each work is drawn at most 1100px wide and never wider than the column.
@@ -99,9 +117,9 @@ ${picture(w.slug, w.image, w.title, workSizes, { eager: i === 0 })}
 <link rel="stylesheet" href="/site.css?v=${assets.css}">
 <script src="/site.js?v=${assets.js}"></script>
 </head>
-<body>
+<body${site.demo ? ' class="has-sash"' : ''}>
 <a class="skip" href="#works">Skip to the works</a>
-<header class="bar">
+${sash(site)}<header class="bar">
 <a class="mark" href="#top">${esc(site.artist)}</a>
 <nav aria-label="Sections">
 <a href="#works">Works</a>
@@ -143,7 +161,7 @@ ${site.about.map((p) => `<p class="reveal">${esc(p)}</p>`).join('\n')}
 </main>
 
 <footer class="foot">
-<p>© ${year} ${esc(site.artist)}</p>
+<p>© ${year} ${esc(site.artist)}<span class="ver">${esc(versionLabel())}</span></p>
 </footer>
 
 <dialog class="lightbox" aria-label="Work, enlarged">
