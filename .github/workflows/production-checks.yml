@@ -44,7 +44,7 @@ jobs:
           echo "image runs as ${uid}:${gid}"
           [ "$uid:$gid" = "1000:1000" ] || { echo "::error::image runs as ${uid}:${gid}, expected 1000:1000"; exit 1; }
           docker run -d --name pr -p 8080:8080 christina-art:pr
-          for i in $(seq 1 20); do
+          for _ in $(seq 1 20); do
             if curl -fs http://localhost:8080/health -o /tmp/health.json; then break; fi
             sleep 1
           done
@@ -61,11 +61,43 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: scripts/check-changelog.sh
 
+      # The release step runs only after a deploy, so a broken notes script
+      # would otherwise first show itself with the site already updated.
+      # Render the notes here with stand-in smoke-test values.
+      - name: Render the release notes the deploy would publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: 2099.01.01.1
+          SMOKE_SERVED: 2099.01.01.1
+          SMOKE_PAGE: '200'
+          SMOKE_WWW_CODE: '301'
+          SMOKE_WWW_LOCATION: https://christinaschwarz.art/release-check?v=2099.01.01.1
+          SMOKE_AT: 2099-01-01T00:00:00Z
+        run: |
+          set -euo pipefail
+          git fetch --quiet --tags --unshallow origin 2>/dev/null || git fetch --quiet --tags origin
+          scripts/release-notes.sh | tee /tmp/notes.md
+          grep -q '### Verified at release' /tmp/notes.md
+
+      # The deploy workflow itself is only exercised by a deploy; lint it (and
+      # the others) here so a typo cannot reach production.
+      - name: Lint the workflows
+        run: |
+          set -euo pipefail
+          curl -sSL https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_linux_amd64.tar.gz | tar xz actionlint
+          ./actionlint -color
+
   e2e:
-    # On GitHub's runners, not in the deploy: installing a browser on the
-    # in-cluster runner (512Mi) OOM-kills it. Against a locally started
-    # server, so a broken build is caught before it is merged.
+    # The release gate, in a browser. On GitHub's runners, not in the deploy:
+    # installing a browser on the in-cluster runner (512Mi) OOM-kills it.
+    #
+    # It tests the Docker image this commit builds, the same artifact the
+    # deploy ships (content compiled in, no content/ beside it), in four
+    # browsers: desktop Chrome, an Android phone, an iPhone (WebKit, i.e.
+    # Safari) and desktop Firefox. Then Lighthouse, Google's PageSpeed test.
+    # One job, so the required check stays the single `e2e` context.
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
 
@@ -76,19 +108,47 @@ jobs:
 
       - run: npm ci
 
+      - name: Build and start the image
+        run: |
+          set -euo pipefail
+          docker build --build-arg APP_VERSION=2099.01.01.1 -t christina-art:e2e .
+          docker run -d --name site -p 8080:8080 christina-art:e2e
+          for _ in $(seq 1 30); do curl -fs http://localhost:8080/health && break; sleep 1; done
+          echo
+
       # `--with-deps` runs `apt-get update`, which also reads the Google
       # Chrome source the runner image ships. One bad index there fails the
-      # whole job (it did, 2026-09-09, in art), so drop the source we don't use.
-      - name: Install Chromium for Playwright
+      # whole job (it did, 2026-09-09, in art), so drop the source we don't
+      # use. The Chrome binary itself stays; Lighthouse uses it below.
+      - name: Install the browsers
         run: |
           sudo rm -f /etc/apt/sources.list.d/google-chrome.list \
                      /etc/apt/sources.list.d/google-chrome.sources
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps chromium webkit firefox
 
-      # Builds, starts the server, waits for /health and stops it again, all
-      # from webServer in playwright.config.ts.
-      - name: Run the smoke test
-        run: npm run test:e2e
+      - name: Walk the site in four browsers
+        env:
+          BASE_URL: http://localhost:8080
+          EXPECT_VERSION: 2099.01.01.1
+        run: npx playwright test
+
+      - name: Lighthouse (Google PageSpeed) on a phone
+        run: scripts/lighthouse-gate.sh http://localhost:8080/
+
+      - name: Keep the reports when something failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-reports
+          path: |
+            playwright-report/
+            test-results/
+            lighthouse-report.report.html
+          retention-days: 14
+
+      - name: Server log when something failed
+        if: failure()
+        run: docker logs site
 
   codeql:
     runs-on: ubuntu-latest

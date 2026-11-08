@@ -1,4 +1,5 @@
 import express, { Express, NextFunction, Request, Response } from 'express';
+import compression from 'compression';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -21,6 +22,9 @@ const CSP = [
   "style-src 'self'",
   "script-src 'self'",
   "img-src 'self'",
+  // Same-origin fetches only. Nothing on the page fetches; it is here so
+  // Lighthouse (Google's PageSpeed test) can read robots.txt from the page.
+  "connect-src 'self'",
   "base-uri 'none'",
   "form-action 'none'",
   "frame-ancestors 'none'",
@@ -55,6 +59,10 @@ export function createApp(site: Site = loadCompiled()): Express {
 
   app.use(canonicalHost);
   app.use(securityHeaders);
+  // The page, stylesheet and script are text; compression cuts them by about
+  // three quarters. It skips types that are already compressed, so the
+  // pictures go out untouched.
+  app.use(compression());
 
   // Rendered per request: it is a few kilobytes of string, and an exhibition
   // moves from Upcoming to Past on the right day without a restart.
@@ -68,8 +76,23 @@ export function createApp(site: Site = loadCompiled()): Express {
     '/img',
     express.static(path.join(PUBLIC_DIR, 'img'), { index: false, immutable: true, maxAge: '365d', fallthrough: true }),
   );
-  // site.css/js are fetched with ?v=<hash>; the icons rarely change.
-  app.use(express.static(PUBLIC_DIR, { index: false, maxAge: '1d' }));
+  // site.css/js are linked as ?v=<content hash>, so a request carrying the
+  // current hash can be cached for a year: the next deploy that changes the
+  // file changes the URL. Anything else (icons, robots.txt, a bare
+  // /site.css) gets a day.
+  app.use(
+    express.static(PUBLIC_DIR, {
+      index: false,
+      maxAge: '1d',
+      setHeaders: (res, file) => {
+        const name = path.basename(file);
+        const v = (res.req as Request).query?.v;
+        if ((name === 'site.css' && v === assets.css) || (name === 'site.js' && v === assets.js)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+      },
+    }),
+  );
 
   app.use((_req: Request, res: Response) => {
     res.status(404).type('html').send(renderNotFound(site, assets));

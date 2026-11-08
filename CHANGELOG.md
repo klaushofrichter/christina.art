@@ -18,10 +18,13 @@ this file is where notes are written *before* a release, not an archive.
      Leave the section genuinely empty when there is nothing to say: every
      non-blank line under the heading is published, placeholders included.
 
-     Currently empty. Last released: v2026.11.08.3. -->
+     Currently empty. Last released: v2026.11.08.4. -->
 ## [Unreleased]
 
-A DEMO sash in the top right corner (as on cams.skylar.technology) marks the
-biography, titles and exhibitions as placeholders. The footer now shows the
-release version. Behind the scenes, the site's text lives in three files
-(biography, works, exhibitions) that are checked and built in at deploy time.
+Easier to read: the grey text and the ochre dates now meet the WCAG AA
+contrast standard in the light theme. Faster: pages, styles and scripts are
+compressed and cached longer, and pictures are sized for how wide they are
+actually drawn. The footer credits Skylar.Technology. Behind the scenes, every
+release is now tested in four browsers (including iPhone and Android) and with
+Google's Lighthouse before it goes out, and checked again on the live site
+afterwards.

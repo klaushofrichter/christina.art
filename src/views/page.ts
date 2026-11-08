@@ -77,13 +77,20 @@ function sash(site: Site): string {
 export function renderHome(site: Site, assets: Assets, today: Date = new Date()): string {
   const { upcoming, past } = splitExhibitions(site.exhibitions, today);
   // Each work is drawn at most 1100px wide and never wider than the column.
-  const workSizes = '(min-width: 1180px) 1100px, calc(100vw - 32px)';
+  // How wide each work is really drawn: the column (the screen less its
+  // gutters, at most 1100px), but a tall picture is capped at 82% of the
+  // screen height, which makes it narrower than the column. Telling the
+  // browser so lets it fetch the smaller file it actually needs.
+  const workSizes = (img: ImageEntry) => {
+    const aspect = (img.width / img.height).toFixed(3);
+    return `(min-width: 700px) min(1100px, calc(100vw - 64px), calc(82vh * ${aspect})), min(calc(100vw - 32px), calc(82vh * ${aspect}))`;
+  };
   const works = site.works
     .map((w, i) => {
       const caption = [w.year, w.medium, w.size].filter(Boolean).map((x) => esc(String(x))).join(' · ');
       return `<figure class="work reveal" id="work-${esc(w.slug)}">
 <a class="frame" href="${largest(w.slug, w.image)}" data-index="${i}" aria-label="${esc(w.title)}, view large">
-${picture(w.slug, w.image, w.title, workSizes, { eager: i === 0 })}
+${picture(w.slug, w.image, w.title, workSizes(w.image), { eager: i === 0 })}
 </a>
 <figcaption><span class="title">${esc(w.title)}</span><span class="meta">${caption}</span></figcaption>
 </figure>`;
@@ -96,7 +103,7 @@ ${picture(w.slug, w.image, w.title, workSizes, { eager: i === 0 })}
 
   const year = today.getUTCFullYear();
 
-  return `<!doctype html>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -163,6 +170,7 @@ ${site.about.map((p) => `<p class="reveal">${esc(p)}</p>`).join('\n')}
 
 <footer class="foot">
 <p>© ${year} ${esc(site.artist)}<span class="ver">${esc(versionLabel())}</span></p>
+<p class="powered">powered by <a href="https://www.skylar.technology">Skylar.Technology</a></p>
 </footer>
 
 <dialog class="lightbox" aria-label="Work, enlarged">
@@ -180,7 +188,7 @@ ${site.about.map((p) => `<p class="reveal">${esc(p)}</p>`).join('\n')}
 }
 
 export function renderNotFound(site: Site, assets: Assets): string {
-  return `<!doctype html>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
