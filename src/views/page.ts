@@ -175,13 +175,16 @@ ${site.about.map((p) => `<p class="reveal">${esc(p)}</p>`).join('\n')}
 </footer>
 
 <dialog class="lightbox" aria-label="Work, enlarged">
-${sash(site)}<figure>
+${sash(site)}<button class="lb-close" type="button" aria-label="Close">×</button>
+<figure>
 <div class="stage"></div>
-<figcaption><span class="title"></span><span class="meta"></span><span class="count"></span></figcaption>
+<figcaption><span class="meta"></span><span class="title"></span></figcaption>
 </figure>
-<button class="lb-close" type="button" aria-label="Close">×</button>
+<div class="lb-bar">
 <button class="lb-prev" type="button" aria-label="Previous work">‹</button>
+<span class="count"></span>
 <button class="lb-next" type="button" aria-label="Next work">›</button>
+</div>
 </dialog>
 </body>
 </html>

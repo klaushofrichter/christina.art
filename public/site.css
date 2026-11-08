@@ -282,19 +282,36 @@ h3 { font-weight: 400; margin: 0; }
   color: var(--ink);
   overscroll-behavior: contain;
 }
-.lightbox[open] { display: flex; align-items: center; justify-content: center; animation: fade 0.9s var(--ease); }
+.lightbox[open] { display: flex; flex-direction: column; animation: fade 0.9s var(--ease); }
 .lightbox::backdrop { background: var(--lb-backdrop); }
 @keyframes fade { from { opacity: 0; } }
 
-.lightbox figure { margin: 0; padding: 56px 12px calc(20px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; max-height: 100%; width: 100%; }
-.stage { display: flex; justify-content: center; touch-action: pan-y pinch-zoom; }
-.stage img { width: auto; max-width: calc(100vw - 24px); max-height: calc(100dvh - 150px); transition: opacity 0.9s var(--ease), transform 0.9s var(--ease); box-shadow: var(--lb-shadow); }
+/* A column: the picture centred in the space above, and the words bound to
+   the bottom of the screen, the title directly above ‹ 1 / 6 ›. */
+.lightbox figure { flex: 1; min-height: 0; margin: 0; padding: 56px 12px 0; display: flex; flex-direction: column; align-items: center; width: 100%; }
+.stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; touch-action: pan-y pinch-zoom; }
+.stage img {
+  width: auto;
+  max-width: calc(100vw - 24px);
+  /* Room left for the close button above and the caption and bar below. */
+  max-height: calc(100dvh - 190px - env(safe-area-inset-bottom));
+  transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
+  box-shadow: var(--lb-shadow);
+}
 .stage img.leaving { opacity: 0; }
+.lightbox figcaption { margin-top: 16px; }
 .lightbox .meta, .lightbox .count { color: var(--muted); }
-.count { font-family: var(--sans); font-size: 0.68rem; letter-spacing: 0.16em; margin-top: 6px; }
+
+.lb-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 5vw, 36px);
+  padding: 2px 12px max(8px, env(safe-area-inset-bottom));
+}
+.count { font-family: var(--sans); font-size: 0.68rem; letter-spacing: 0.16em; min-width: 5.5em; text-align: center; }
 
 .lightbox button {
-  position: absolute;
   background: none;
   border: 0;
   color: var(--lb-button);
@@ -306,13 +323,7 @@ h3 { font-weight: 400; margin: 0; }
   transition: opacity 0.6s var(--ease), color 0.6s var(--ease);
 }
 .lightbox button:hover { opacity: 1; color: var(--accent-text); }
-.lb-close { top: max(4px, env(safe-area-inset-top)); right: max(4px, env(safe-area-inset-right)); }
-.lb-prev { left: max(2px, env(safe-area-inset-left)); top: 50%; transform: translateY(-50%); }
-.lb-next { right: max(2px, env(safe-area-inset-right)); top: 50%; transform: translateY(-50%); }
-@media (max-width: 699px) {
-  /* On a phone the arrows sit low, where a thumb is, and swiping works too. */
-  .lb-prev, .lb-next { top: auto; bottom: max(8px, env(safe-area-inset-bottom)); transform: none; }
-}
+.lb-close { position: absolute; top: max(4px, env(safe-area-inset-top)); right: max(4px, env(safe-area-inset-right)); }
 
 body.locked { overflow: hidden; }
 

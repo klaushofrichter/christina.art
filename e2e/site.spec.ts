@@ -145,6 +145,47 @@ test('@live the enlarged view pages through every work and closes again', async 
   expect(problems).toEqual([]);
 });
 
+test('@live in the enlarged view the words sit at the bottom: title, then ‹ n / N ›', async ({ page, isMobile }) => {
+  await page.goto('/');
+  await press(page, isMobile, page.locator('figure.work .frame').first());
+  const box = page.locator('dialog.lightbox');
+  await expect(box).toBeVisible();
+  for (const step of [0, 1]) {
+    if (step) await press(page, isMobile, box.locator('.lb-next'));
+    await expect(box.locator('.stage img')).toBeVisible();
+    const r = async (sel: string) => (await box.locator(sel).first().boundingBox())!;
+    const [img, title, prev, count, next] = await Promise.all(
+      ['.stage img', 'figcaption .title', '.lb-prev', '.count', '.lb-next'].map(r),
+    );
+    const mid = (b: { y: number; height: number }) => b.y + b.height / 2;
+    const vh = page.viewportSize()!.height;
+    // ‹ n / N › on one line, the count between the arrows.
+    expect(Math.abs(mid(prev) - mid(count))).toBeLessThan(4);
+    expect(Math.abs(mid(next) - mid(count))).toBeLessThan(4);
+    expect(prev.x + prev.width).toBeLessThanOrEqual(count.x + 1);
+    expect(count.x + count.width).toBeLessThanOrEqual(next.x + 1);
+    // Bound to the bottom of the screen.
+    expect(vh - (next.y + next.height)).toBeLessThan(48);
+    // The title directly above the count, the picture above both.
+    expect(title.y + title.height).toBeLessThanOrEqual(count.y + 1);
+    expect(count.y - (title.y + title.height)).toBeLessThan(24);
+    expect(img.y + img.height).toBeLessThanOrEqual(title.y + 1);
+  }
+});
+
+test('@live a click beside the enlarged picture closes it', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'a mouse gesture');
+  await page.goto('/');
+  await page.locator('figure.work .frame').first().click();
+  const box = page.locator('dialog.lightbox');
+  await expect(box.locator('.stage img')).toBeVisible();
+  const img = (await box.locator('.stage img').boundingBox())!;
+  // Halfway between the screen's left edge and the picture's, level with it.
+  expect(img.x).toBeGreaterThan(40);
+  await page.mouse.click(img.x / 2, img.y + img.height / 2);
+  await expect(box).toBeHidden();
+});
+
 test('@live the phone Back button closes the enlarged view, not the site', async ({ page, isMobile }) => {
   await page.goto('/');
   await press(page, isMobile, page.locator('figure.work .frame').first());
