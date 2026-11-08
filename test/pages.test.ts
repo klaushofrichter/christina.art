@@ -44,7 +44,11 @@ describe('the GitHub Pages copy', () => {
     expect(csp?.[1]).toContain("script-src 'self'");
     expect(csp?.[1]).not.toContain('frame-ancestors');
     expect(home.indexOf('Content-Security-Policy')).toBeLessThan(home.indexOf('<link rel="stylesheet"'));
-    expect(home).not.toMatch(/<script>|style="/);
+    // Every script is a file (no inline code), whatever the tag's case.
+    const scripts = home.match(/<script\b[^>]*>/gi) ?? [];
+    expect(scripts.length).toBeGreaterThan(0);
+    for (const tag of scripts) expect(tag).toMatch(/\bsrc="/i);
+    expect(home).not.toMatch(/\sstyle\s*=/i);
   });
 
   it('is not indexed, and points search engines at the real site', () => {
