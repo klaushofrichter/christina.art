@@ -65,7 +65,9 @@ export function versionLabel(version: string = appVersion()): string {
 
 /** The demo sash, after cams.skylar.technology's: amber stripes across the
  *  top right corner, a label rather than a link, never in the way of a tap.
- *  Shown while any content file is still placeholder data. */
+ *  Shown while any content file is still placeholder data, on the page and
+ *  again inside the enlarged view (a modal <dialog> sits in the top layer,
+ *  above anything on the page, so it needs its own). */
 function sash(site: Site): string {
   if (!site.demo) return '';
   return `<div class="sash" role="note" aria-label="Demo: the biography, titles and exhibitions on this page are placeholders">
@@ -174,7 +176,7 @@ ${site.about.map((p) => `<p class="reveal">${esc(p)}</p>`).join('\n')}
 </footer>
 
 <dialog class="lightbox" aria-label="Work, enlarged">
-<figure>
+${sash(site)}<figure>
 <div class="stage"></div>
 <figcaption><span class="title"></span><span class="meta"></span><span class="count"></span></figcaption>
 </figure>

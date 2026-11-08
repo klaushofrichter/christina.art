@@ -28,3 +28,7 @@ actually drawn. The footer credits Skylar.Technology. Behind the scenes, every
 release is now tested in four browsers (including iPhone and Android) and with
 Google's Lighthouse before it goes out, and checked again on the live site
 afterwards.
+
+A new site icon: one of the poppies from "Pink Poppies" (the drawn mark it
+replaces is kept in the repository). The DEMO sash now shows in the enlarged
+view too; while it does, Close sits at the top left.

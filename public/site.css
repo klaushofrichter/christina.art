@@ -355,6 +355,10 @@ body.locked { overflow: hidden; }
   .has-sash .bar nav a { letter-spacing: 0.1em; }
 }
 
+/* In the enlarged view the sash takes the top right corner, so Close moves
+   to the top left, where nothing covers it. */
+.has-sash .lb-close { right: auto; left: max(4px, env(safe-area-inset-left)); }
+
 /* ---- version in the footer ---- */
 
 .ver { margin-left: 0.9em; padding-left: 0.9em; border-left: 1px solid var(--line); letter-spacing: 0.1em; }

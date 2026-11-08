@@ -114,7 +114,7 @@ test('no console errors or CSP violations through a full visit', async ({ page, 
 test.describe('the demo sash', () => {
   test('never covers a section link', async ({ page }) => {
     await page.goto('/');
-    const sash = page.locator('.sash span');
+    const sash = page.locator('body > .sash span');
     test.skip((await sash.count()) === 0, 'content is not placeholder data: no sash');
     await expect(sash).toBeVisible();
     // The links stay tappable: the element at each link's centre is the link.
@@ -126,7 +126,26 @@ test.describe('the demo sash', () => {
     }
     // And the rotated band starts clear of the last link.
     const about = (await page.locator('.bar nav a').last().boundingBox())!;
-    const box = (await page.locator('.sash').boundingBox())!;
+    const box = (await page.locator('body > .sash').boundingBox())!;
     expect(about.x + about.width).toBeLessThanOrEqual(box.x + box.width * 0.25 + 1);
+  });
+
+  test('shows in the enlarged view too, clear of Close', async ({ page, isMobile }) => {
+    await page.goto('/');
+    test.skip((await page.locator('.sash').count()) === 0, 'content is not placeholder data: no sash');
+    const opener = page.locator('figure.work .frame').first();
+    if (isMobile) await opener.tap();
+    else await opener.click();
+    const dialog = page.locator('dialog.lightbox');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('.sash span')).toBeVisible();
+    // Close and the sash's corner do not overlap.
+    const close = (await dialog.locator('.lb-close').boundingBox())!;
+    const box = (await dialog.locator('.sash').boundingBox())!;
+    const apart =
+      close.x + close.width <= box.x || box.x + box.width <= close.x || close.y + close.height <= box.y || box.y + box.height <= close.y;
+    expect(apart).toBe(true);
+    await dialog.locator('.lb-close').click();
+    await expect(dialog).toBeHidden();
   });
 });
