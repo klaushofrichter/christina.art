@@ -363,9 +363,13 @@ body.locked { overflow: hidden; }
 
 /* One line: © name | version | powered by. A phone has no room for all
    three, so there the credit takes its own line, without a divider. */
-.ver, .foot .powered { display: inline-block; margin-left: 0.9em; padding-left: 0.9em; border-left: 1px solid var(--line); letter-spacing: 0.1em; }
+.ver, .foot .powered { display: inline-block; letter-spacing: 0.1em; }
+/* A middle dot between the parts; the empty alt text keeps screen readers
+   from announcing it. */
+.ver::before, .foot .powered::before { content: '·' / ''; margin: 0 0.7em; color: var(--muted); }
 @media (max-width: 559px) {
-  .foot .powered { display: block; margin: 8px 0 0; padding: 0; border: 0; }
+  .foot .powered { display: block; margin-top: 8px; }
+  .foot .powered::before { content: none; }
 }
 
 /* ---- powered by ---- */
