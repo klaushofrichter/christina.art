@@ -49,6 +49,16 @@ export const COMPILED = path.join(__dirname, 'content.json');
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+/** YYYY-MM-DD and a day that exists: no month 13, no 31 April, no 29
+ *  February outside a leap year. Checked in UTC, where no clock shift can
+ *  move the day. */
+export function isCalendarDate(s: string): boolean {
+  if (!DATE.test(s)) return false;
+  const [y, m, d] = s.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d));
+  return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
+}
+
 function readJson(dir: string, name: string): Record<string, unknown> {
   const file = path.join(dir, name);
   try {
@@ -85,15 +95,23 @@ export function loadSite(dir: string = CONTENT_DIR): Site {
   if (!Array.isArray(worksFile.works) || !worksFile.works.length) throw new Error('content/works.json: no works');
   if (!Array.isArray(exFile.exhibitions)) throw new Error('content/exhibitions.json: "exhibitions" must be a list');
 
+  const seen = new Set<string>();
   const works: Work[] = (worksFile.works as Record<string, unknown>[]).map((w, i) => {
     const slug = String(w.image ?? '');
     const image = images.works?.[slug];
     if (!image) throw new Error(`content/works.json: work ${i + 1} names image "${slug}", which images.json does not have`);
+    if (seen.has(slug)) throw new Error(`content/works.json: image "${slug}" is used by two works`);
+    seen.add(slug);
     if (!w.title) throw new Error(`content/works.json: work "${slug}" has no title`);
+    // The same rule as the sheet's (scripts/sheet-format.ts), for files edited by hand.
+    const year = Number(w.year);
+    if (!Number.isInteger(year) || year < 1900 || year > 2200) {
+      throw new Error(`content/works.json: work "${slug}" has year "${w.year}", which is not a year`);
+    }
     return {
       slug,
       title: String(w.title),
-      year: Number(w.year),
+      year,
       medium: String(w.medium ?? ''),
       size: w.size ? String(w.size) : undefined,
       image,
@@ -104,8 +122,11 @@ export function loadSite(dir: string = CONTENT_DIR): Site {
     for (const key of ['title', 'kind', 'venue', 'city', 'from', 'to']) {
       if (!e[key]) throw new Error(`content/exhibitions.json: an exhibition has no "${key}"`);
     }
-    if (!DATE.test(String(e.from)) || !DATE.test(String(e.to))) {
-      throw new Error(`content/exhibitions.json: "${e.title}" dates must be YYYY-MM-DD`);
+    if (!isCalendarDate(String(e.from)) || !isCalendarDate(String(e.to))) {
+      throw new Error(`content/exhibitions.json: "${e.title}" dates must be YYYY-MM-DD, and real days`);
+    }
+    if (String(e.from) > String(e.to)) {
+      throw new Error(`content/exhibitions.json: "${e.title}" ends (${e.to}) before it opens (${e.from})`);
     }
     const { title, kind, venue, city, from, to } = e as Record<string, string>;
     return { title, kind, venue, city, from, to };

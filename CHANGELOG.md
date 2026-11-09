@@ -20,3 +20,9 @@ this file is where notes are written *before* a release, not an archive.
 
      Currently empty. Last released: v2026.11.08.7. -->
 ## [Unreleased]
+
+Fixes from a review of the whole site. In the enlarged view, a picture that
+fails to load no longer leaves the view blank, and a pinch-zoom no longer turns
+the page. The © year follows the site's Chicago date. The content check now
+refuses impossible dates, shows that end before they open, years that are not
+years, and two works with the same picture.
