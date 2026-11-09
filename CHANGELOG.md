@@ -18,8 +18,11 @@ this file is where notes are written *before* a release, not an archive.
      Leave the section genuinely empty when there is nothing to say: every
      non-blank line under the heading is published, placeholders included.
 
-     Last released: v2026.11.08.6. -->
+     Currently empty. Last released: v2026.11.08.7. -->
 ## [Unreleased]
 
-The enlarged view keeps its words at the bottom of the screen: the title,
-and under it the count between the arrows (‹ 2 / 6 ›).
+Fixes from a review of the whole site. In the enlarged view, a picture that
+fails to load no longer leaves the view blank, and a pinch-zoom no longer turns
+the page. The © year follows the site's Chicago date. The content check now
+refuses impossible dates, shows that end before they open, years that are not
+years, and two works with the same picture.

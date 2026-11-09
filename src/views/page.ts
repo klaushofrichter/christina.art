@@ -1,5 +1,5 @@
 import { CANONICAL_ORIGIN } from '../site';
-import { Exhibition, ImageEntry, Site, splitExhibitions } from '../content';
+import { Exhibition, ImageEntry, Site, siteDate, splitExhibitions } from '../content';
 import { appVersion } from '../version';
 
 export type Assets = { css: string; js: string };
@@ -37,12 +37,18 @@ export function picture(
   sizes: string,
   opts: { eager?: boolean; cls?: string } = {},
 ): string {
-  const fallback = img.widths.find((w) => w >= 1200) ?? img.widths[img.widths.length - 1];
   return `<picture>
 <source type="image/avif" srcset="${srcset(slug, img, 'avif')}" sizes="${sizes}">
 <source type="image/webp" srcset="${srcset(slug, img, 'webp')}" sizes="${sizes}">
-<img${opts.cls ? ` class="${opts.cls}"` : ''} src="/img/${slug}-${fallback}.${img.hash}.jpg" srcset="${srcset(slug, img, 'jpg')}" sizes="${sizes}" width="${img.width}" height="${img.height}" alt="${esc(alt)}" data-color="${img.color}" ${opts.eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">
+<img${opts.cls ? ` class="${opts.cls}"` : ''} src="${fallbackJpg(slug, img)}" srcset="${srcset(slug, img, 'jpg')}" sizes="${sizes}" width="${img.width}" height="${img.height}" alt="${esc(alt)}" data-color="${img.color}" ${opts.eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">
 </picture>`;
+}
+
+/** The JPEG a browser without srcset support shows, and the social preview:
+ *  1200px wide, or the largest there is. */
+function fallbackJpg(slug: string, img: ImageEntry): string {
+  const w = img.widths.find((x) => x >= 1200) ?? img.widths[img.widths.length - 1];
+  return `/img/${slug}-${w}.${img.hash}.jpg`;
 }
 
 function largest(slug: string, img: ImageEntry): string {
@@ -103,7 +109,8 @@ ${picture(w.slug, w.image, w.title, workSizes(w.image), { eager: i === 0 })}
     ? `<div class="portrait reveal">${picture('artist', site.portrait, `Portrait of ${site.artist}`, '(min-width: 900px) 360px, (min-width: 600px) 45vw, calc(100vw - 32px)')}</div>`
     : '';
 
-  const year = today.getUTCFullYear();
+  // The site's calendar year (Chicago), like everything else dated here.
+  const year = siteDate(today).slice(0, 4);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -123,7 +130,7 @@ ${picture(w.slug, w.image, w.title, workSizes(w.image), { eager: i === 0 })}
 <meta property="og:title" content="${esc(site.artist)}">
 <meta property="og:description" content="${esc(site.description)}">
 <meta property="og:url" content="${CANONICAL_ORIGIN}/">
-<meta property="og:image" content="${CANONICAL_ORIGIN}/img/${site.works[0].slug}-${site.works[0].image.widths.find((w) => w >= 1200) ?? site.works[0].image.widths[site.works[0].image.widths.length - 1]}.${site.works[0].image.hash}.jpg">
+<meta property="og:image" content="${CANONICAL_ORIGIN}${fallbackJpg(site.works[0].slug, site.works[0].image)}">
 <link rel="stylesheet" href="/site.css?v=${assets.css}">
 <script src="/site.js?v=${assets.js}"></script>
 </head>
