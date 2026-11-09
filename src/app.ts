@@ -5,7 +5,8 @@ import fs from 'fs';
 import path from 'path';
 import { healthRouter } from './routes/health';
 import { canonicalHost } from './canonical';
-import { Site, loadCompiled } from './content';
+import { Site, loadCompiled, siteDate } from './content';
+import { appVersion } from './version';
 import { Assets, renderHome, renderNotFound } from './views/page';
 
 export const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -64,11 +65,16 @@ export function createApp(site: Site = loadCompiled()): Express {
   // pictures go out untouched.
   app.use(compression());
 
-  // Rendered per request: it is a few kilobytes of string, and an exhibition
-  // moves from Upcoming to Past on the right day without a restart.
+  // Rendered once per day (Chicago) and release, then served from memory:
+  // the page only changes when an exhibition moves from Upcoming to Past or
+  // the year turns, and that happens on the right day without a restart.
+  let home: { key: string; html: string } | null = null;
   app.get('/', (_req: Request, res: Response) => {
+    const now = new Date();
+    const key = `${siteDate(now)}|${appVersion()}`;
+    if (home?.key !== key) home = { key, html: renderHome(site, assets, now) };
     res.set('Cache-Control', 'public, max-age=300');
-    res.type('html').send(renderHome(site, assets));
+    res.type('html').send(home.html);
   });
 
   // Picture file names carry a content hash, so they never change in place.

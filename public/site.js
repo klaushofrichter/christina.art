@@ -96,7 +96,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const img = pic.querySelector('img');
     if (!img.complete) {
       img.classList.add('pending');
-      img.addEventListener('load', () => img.classList.remove('pending'), { once: true });
+      // On error too, as on the page: a picture that fails must not leave the
+      // enlarged view blank (the browser shows its alt text instead).
+      const done = () => img.classList.remove('pending');
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', done, { once: true });
     } else {
       img.classList.remove('pending');
     }
@@ -155,15 +159,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Swipe: a mostly horizontal drag of 50px or more pages; anything else is
   // left to the browser (pinch-zoom, vertical scroll).
+  // A gesture that ever had a second finger (a pinch) is not a swipe, even
+  // when its last finger lifts alone.
   let sx = 0;
   let sy = 0;
+  let swiping = false;
   stage.addEventListener('touchstart', (ev) => {
-    if (ev.touches.length !== 1) return;
+    swiping = ev.touches.length === 1;
+    if (!swiping) return;
     sx = ev.touches[0].clientX;
     sy = ev.touches[0].clientY;
   }, { passive: true });
   stage.addEventListener('touchend', (ev) => {
-    if (ev.changedTouches.length !== 1) return;
+    if (!swiping || ev.changedTouches.length !== 1) return;
+    swiping = false;
     const dx = ev.changedTouches[0].clientX - sx;
     const dy = ev.changedTouches[0].clientY - sy;
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1);

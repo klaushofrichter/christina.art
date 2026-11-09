@@ -65,6 +65,13 @@ async function toMaster(src: string, dest: string): Promise<void> {
   fs.writeFileSync(dest, buf);
 }
 
+/** The slug a derivative file belongs to ("poppies-2-480.0123abcd45.avif" →
+ *  "poppies-2"), or null for a file that is not a derivative. */
+export function derivativeSlug(name: string): string | null {
+  const m = name.match(/^(.+)-\d+\.[0-9a-f]{10}\.(avif|webp|jpg)$/);
+  return m ? m[1] : null;
+}
+
 function slugOf(file: string): string {
   return path
     .basename(file, path.extname(file))
@@ -135,8 +142,11 @@ async function derive(master: string, slug: string, widthsWanted: number[]): Pro
     }
   }
   // Drop this picture's derivatives from earlier settings or an older master.
+  // Matched by the exact name pattern, not a prefix: a prefix would also take
+  // the files of a work whose slug merely starts the same ("poppies" would
+  // delete "poppies-2-…").
   for (const name of fs.readdirSync(OUT)) {
-    if (name.startsWith(`${slug}-`) && !keep.has(name)) fs.rmSync(path.join(OUT, name));
+    if (derivativeSlug(name) === slug && !keep.has(name)) fs.rmSync(path.join(OUT, name));
   }
 
   const { dominant } = await sharp(bytes).stats();
@@ -223,7 +233,7 @@ async function main(): Promise<void> {
   // Remove derivatives whose master no longer exists.
   const slugs = new Set([...Object.keys(manifest.works), 'artist']);
   for (const name of fs.readdirSync(OUT)) {
-    const slug = name.replace(/-\d+\.[0-9a-f]{10}\.(avif|webp|jpg)$/, '');
+    const slug = derivativeSlug(name) ?? name;
     if (!slugs.has(slug)) fs.rmSync(path.join(OUT, name));
   }
 
@@ -232,7 +242,9 @@ async function main(): Promise<void> {
   console.log(`wrote ${path.relative(ROOT, MANIFEST)} and the favicon set`);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

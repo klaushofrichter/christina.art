@@ -173,6 +173,19 @@ test('@live in the enlarged view the words sit at the bottom: title, then ‹ n 
   }
 });
 
+test('a picture that fails to load does not leave the enlarged view blank', async ({ page, isMobile }) => {
+  await page.goto('/');
+  await scrollThrough(page);
+  // From now on every picture request fails, as on a dropped connection; the
+  // enlarged view asks for a larger file than the page holds.
+  await page.route('**/img/**', (route) => route.abort());
+  await press(page, isMobile, page.locator('figure.work .frame').first());
+  const big = page.locator('dialog.lightbox .stage img');
+  await expect(big).toBeAttached();
+  await expect(big).not.toHaveClass(/pending/);
+  await expect(page.locator('dialog.lightbox figcaption .title')).not.toBeEmpty();
+});
+
 test('@live a click beside the enlarged picture closes it', async ({ page, isMobile }) => {
   test.skip(isMobile, 'a mouse gesture');
   await page.goto('/');
@@ -295,6 +308,12 @@ test.describe('on a phone', () => {
     // A mostly vertical drag is a scroll, not a page turn.
     await stage.dispatchEvent('touchstart', { touches: [{ identifier: 2, clientX: 200, clientY: 200 }] });
     await stage.dispatchEvent('touchend', { changedTouches: [{ identifier: 2, clientX: 140, clientY: 420 }] });
+    await expect(page.locator('dialog.lightbox .count')).toHaveText(/^2 \//);
+    // A pinch is not a swipe, even when its last finger lifts alone far away.
+    await stage.dispatchEvent('touchstart', {
+      touches: [{ identifier: 3, clientX: 150, clientY: 300 }, { identifier: 4, clientX: 250, clientY: 300 }],
+    });
+    await stage.dispatchEvent('touchend', { changedTouches: [{ identifier: 4, clientX: 40, clientY: 300 }] });
     await expect(page.locator('dialog.lightbox .count')).toHaveText(/^2 \//);
   });
 });
