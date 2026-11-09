@@ -67,7 +67,7 @@ jobs:
           npm run build
           npx tsx scripts/build-pages.ts _site "/${GITHUB_REPOSITORY#*/}"
 
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
 
@@ -83,7 +83,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
       # The copy is served and shows the release it was built from.
       - name: Check the copy
