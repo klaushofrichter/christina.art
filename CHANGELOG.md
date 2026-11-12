@@ -20,3 +20,7 @@ this file is where notes are written *before* a release, not an archive.
 
      Currently empty. Last released: v2026.11.09.1. -->
 ## [Unreleased]
+
+Five new works: Strawberries and Blueberries, Lights in the Wood, River Stones,
+Red and Violet Anemones and Moon over the Meadow (titles, years and media are
+placeholders until the real ones arrive).
