@@ -18,11 +18,9 @@ this file is where notes are written *before* a release, not an archive.
      Leave the section genuinely empty when there is nothing to say: every
      non-blank line under the heading is published, placeholders included.
 
-     Currently empty. Last released: v2026.11.08.7. -->
+     Currently empty. Last released: v2026.11.09.1. -->
 ## [Unreleased]
 
-Fixes from a review of the whole site. In the enlarged view, a picture that
-fails to load no longer leaves the view blank, and a pinch-zoom no longer turns
-the page. The © year follows the site's Chicago date. The content check now
-refuses impossible dates, shows that end before they open, years that are not
-years, and two works with the same picture.
+Five new works: Strawberries and Blueberries, Lights in the Wood, River Stones,
+Red and Violet Anemones and Moon over the Meadow (titles, years and media are
+placeholders until the real ones arrive).
