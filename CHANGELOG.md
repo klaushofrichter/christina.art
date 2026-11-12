@@ -18,9 +18,5 @@ this file is where notes are written *before* a release, not an archive.
      Leave the section genuinely empty when there is nothing to say: every
      non-blank line under the heading is published, placeholders included.
 
-     Currently empty. Last released: v2026.11.09.1. -->
+     Currently empty. Last released: v2026.11.12.1. -->
 ## [Unreleased]
-
-Five new works: Strawberries and Blueberries, Lights in the Wood, River Stones,
-Red and Violet Anemones and Moon over the Meadow (titles, years and media are
-placeholders until the real ones arrive).
