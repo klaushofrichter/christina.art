@@ -5,7 +5,8 @@
  *   APP_VERSION=2026.11.08.5 npx tsx scripts/build-pages.ts _site /christina.art
  *
  * The page is rendered exactly as the server renders it (src/views/page.ts),
- * from the same compiled content, then:
+ * from the content sources, checked as the build checks them (loadSite), so
+ * no `npm run build` is needed first; then:
  *  - every site-relative URL ("/img/…", "/site.css", "/") gains the base path,
  *    because a project site lives under /<repo>/;
  *  - the CSP the server sends as a header goes in a <meta> (Pages sets no

@@ -49,14 +49,14 @@ export const COMPILED = path.join(__dirname, 'content.json');
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** YYYY-MM-DD and a day that exists: no month 13, no 31 April, no 29
- *  February outside a leap year. Checked in UTC, where no clock shift can
- *  move the day. */
 /** A work's year: a whole number from 1900 to 2200. */
 export function isYear(n: number): boolean {
   return Number.isInteger(n) && n >= 1900 && n <= 2200;
 }
 
+/** YYYY-MM-DD and a day that exists: no month 13, no 31 April, no 29
+ *  February outside a leap year. Checked in UTC, where no clock shift can
+ *  move the day. */
 export function isCalendarDate(s: string): boolean {
   if (!DATE.test(s)) return false;
   const [y, m, d] = s.split('-').map(Number);

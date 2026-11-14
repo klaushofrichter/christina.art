@@ -100,7 +100,10 @@ export function renderHome(site: Site, assets: Assets, today: Date = new Date())
   // browser so lets it fetch the smaller file it actually needs.
   const workSizes = (img: ImageEntry) => {
     const aspect = (img.width / img.height).toFixed(3);
-    return `(min-width: 700px) min(1100px, calc(100vw - 64px), calc(82vh * ${aspect})), min(calc(100vw - 32px), calc(82vh * ${aspect}))`;
+    // The height cap as site.css has it (--cap: min(82svh, 1400px)), in vh:
+    // never smaller than svh, so a browser fetches at most a little more.
+    const cap = `min(82vh, 1400px)`;
+    return `(min-width: 700px) min(1100px, calc(100vw - 64px), calc(${cap} * ${aspect})), min(calc(100vw - 32px), calc(${cap} * ${aspect}))`;
   };
   const works = site.works
     .map((w, i) => {

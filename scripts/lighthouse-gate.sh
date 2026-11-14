@@ -8,7 +8,8 @@
 # Needs a Chrome: CHROME_PATH, or google-chrome on PATH (GitHub's runners have
 # one). Writes the full report to lighthouse-report.html beside the JSON.
 #
-# Floors, measured 2026-11-08 on this site (98/100/100/100 locally, 100 live):
+# Floors (set in scripts/lighthouse-summary.js), measured 2026-11-08 on this
+# site (98/100/100/100 locally, 100 live):
 # performance has room for slower shared runners; the others must be perfect,
 # because a drop there is always a real defect (a contrast slip, a missing
 # robots.txt, a console error), never noise.
@@ -23,7 +24,6 @@ set -euo pipefail
 
 URL="${1:?usage: lighthouse-gate.sh URL}"
 OUT="${LH_OUT:-lighthouse-report}"
-declare -A FLOOR=([performance]=90 [accessibility]=100 [best-practices]=100 [seo]=100)
 
 CHROME_PATH="${CHROME_PATH:-$(command -v google-chrome || command -v chromium || true)}"
 [ -n "$CHROME_PATH" ] || { echo "::error::no Chrome found for Lighthouse"; exit 1; }
@@ -43,6 +43,10 @@ status=0
 summary=$(node "$(dirname "$0")/lighthouse-summary.js" "./$OUT" "$RUNS") || status=$?
 printf '%s\n' "$summary" | grep -v '^median='
 median=$(printf '%s\n' "$summary" | sed -n 's/^median=//p')
+if [ -z "$median" ]; then
+  echo "::error::could not read the Lighthouse reports; the per-run files are kept: $OUT-run*.report.*"
+  exit 1
+fi
 
 # The median run becomes the report; the rest are dropped.
 cp "$OUT-run$median.report.json" "$OUT.report.json"

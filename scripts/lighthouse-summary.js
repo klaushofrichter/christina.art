@@ -6,7 +6,7 @@
 // Performance is judged on the median run (Lighthouse's own advice for its
 // run-to-run variance); accessibility, best practices and SEO must hold in
 // every run, since a drop there is a real defect, never noise. The median
-// run's number is printed on the last line as "median=N" for the caller.
+// run's number is printed first, as "median=N", for the caller to keep.
 'use strict';
 
 const FLOORS = { performance: 90, accessibility: 100, 'best-practices': 100, seo: 100 };
@@ -15,10 +15,12 @@ const runs = Array.from({ length: Number(runsArg) }, (_, i) => {
   const n = i + 1;
   return { n, report: require(require('path').resolve(`${prefix}-run${n}.report.json`)) };
 });
-const score = (r, cat) => Math.round(r.report.categories[cat].score * 100);
+// A category a run could not score counts as 0, so it fails rather than throws.
+const score = (r, cat) => Math.round((r.report.categories[cat]?.score ?? 0) * 100);
 
 const byPerf = [...runs].sort((a, b) => score(a, 'performance') - score(b, 'performance'));
 const median = byPerf[Math.floor(byPerf.length / 2)];
+console.log(`median=${median.n}`);
 console.log(`Lighthouse performance per run: ${runs.map((r) => score(r, 'performance')).join(' ')} (median: run ${median.n})`);
 
 let failed = false;
@@ -33,14 +35,13 @@ for (const [cat, floor] of Object.entries(FLOORS)) {
 }
 
 // What lost points in the median run, so nobody has to open the report to start fixing.
-const audits = median.report.audits;
+const audits = median.report.audits ?? {};
 for (const [id, a] of Object.entries(audits)) {
   if (a.score !== null && a.score < 0.9 && !['informative', 'notApplicable', 'manual'].includes(a.scoreDisplayMode)) {
     console.log(`  below 90: ${id} ${a.displayValue || ''}`);
   }
 }
 for (const k of ['first-contentful-paint', 'largest-contentful-paint', 'cumulative-layout-shift', 'total-blocking-time', 'total-byte-weight']) {
-  console.log(`  ${k}: ${audits[k].displayValue}`);
+  console.log(`  ${k}: ${audits[k]?.displayValue ?? 'not measured'}`);
 }
-console.log(`median=${median.n}`);
 process.exitCode = failed ? 1 : 0;

@@ -175,8 +175,9 @@ h1 {
 
 .work { margin: 0; width: 100%; max-width: 1100px; display: flex; flex-direction: column; align-items: center; }
 
-/* A work is drawn no taller than this; the frame's width (below) and the
-   picture's `sizes` (src/views/page.ts) follow the same cap. */
+/* A work is drawn no taller than this; the frame's width (below) uses it, and
+   the picture's `sizes` (src/views/page.ts) repeats it in vh, which a
+   `sizes` value can always use. */
 .frame { --cap: min(82svh, 1400px); display: block; cursor: zoom-in; }
 .frame img {
   width: auto;
