@@ -8,14 +8,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ---- each picture waits over its own muted colour, then fades in ----
+  // On error too: a picture that fails must not stay invisible (the browser
+  // shows its alt text instead).
+  function fadeIn(img) {
+    img.classList.toggle('pending', !img.complete);
+    if (img.complete) return;
+    const done = () => img.classList.remove('pending');
+    img.addEventListener('load', done, { once: true });
+    img.addEventListener('error', done, { once: true });
+  }
   for (const img of document.querySelectorAll('img[data-color]')) {
     img.style.backgroundColor = img.dataset.color;
-    if (!img.complete) {
-      img.classList.add('pending');
-      const done = () => img.classList.remove('pending');
-      img.addEventListener('load', done, { once: true });
-      img.addEventListener('error', done, { once: true });
-    }
+    fadeIn(img);
   }
 
   // ---- each work's frame holds its picture's size before the file arrives ----
@@ -93,17 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
     index = (i + works.length) % works.length;
     const figure = works[index];
     const pic = enlarged(figure);
-    const img = pic.querySelector('img');
-    if (!img.complete) {
-      img.classList.add('pending');
-      // On error too, as on the page: a picture that fails must not leave the
-      // enlarged view blank (the browser shows its alt text instead).
-      const done = () => img.classList.remove('pending');
-      img.addEventListener('load', done, { once: true });
-      img.addEventListener('error', done, { once: true });
-    } else {
-      img.classList.remove('pending');
-    }
+    fadeIn(pic.querySelector('img'));
     stage.replaceChildren(pic);
     title.textContent = figure.querySelector('figcaption .title').textContent;
     meta.textContent = figure.querySelector('figcaption .meta').textContent;

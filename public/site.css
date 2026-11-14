@@ -175,17 +175,19 @@ h1 {
 
 .work { margin: 0; width: 100%; max-width: 1100px; display: flex; flex-direction: column; align-items: center; }
 
-.frame { display: block; cursor: zoom-in; }
+/* A work is drawn no taller than this; the frame's width (below) and the
+   picture's `sizes` (src/views/page.ts) follow the same cap. */
+.frame { --cap: min(82svh, 1400px); display: block; cursor: zoom-in; }
 .frame img {
   width: auto;
-  max-height: min(82svh, 1400px);
+  max-height: var(--cap);
   box-shadow: var(--frame-shadow);
   transition: filter 1.4s var(--ease), opacity 1.4s var(--ease);
 }
 /* With JS (site.js sets --ar from the picture's width/height): the frame is
    as wide as the picture will be drawn, before it has loaded, and the
    picture fills it. Without JS, the rule above stands. */
-.frame.sized { width: min(100%, calc(min(82svh, 1400px) * var(--ar))); }
+.frame.sized { width: min(100%, calc(var(--cap) * var(--ar))); }
 .frame.sized img { width: 100%; }
 .frame:hover img { filter: brightness(1.03) saturate(1.02); }
 
@@ -295,12 +297,10 @@ h3 { font-weight: 400; margin: 0; }
   max-width: calc(100vw - 24px);
   /* Room left for the close button above and the caption and bar below. */
   max-height: calc(100dvh - 190px - env(safe-area-inset-bottom));
-  transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
+  transition: opacity 0.9s var(--ease);
   box-shadow: var(--lb-shadow);
 }
-.stage img.leaving { opacity: 0; }
 .lightbox figcaption { margin-top: 16px; }
-.lightbox .meta, .lightbox .count { color: var(--muted); }
 
 .lb-bar {
   display: flex;
@@ -309,7 +309,7 @@ h3 { font-weight: 400; margin: 0; }
   gap: clamp(12px, 5vw, 36px);
   padding: 2px 12px max(8px, env(safe-area-inset-bottom));
 }
-.count { font-family: var(--sans); font-size: 0.68rem; letter-spacing: 0.16em; min-width: 5.5em; text-align: center; }
+.count { color: var(--muted); font-family: var(--sans); font-size: 0.68rem; letter-spacing: 0.16em; min-width: 5.5em; text-align: center; }
 
 .lightbox button {
   background: none;

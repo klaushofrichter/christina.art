@@ -4,7 +4,7 @@
  * light on a phone, and the demo sash never gets in the way.
  */
 import { test, expect } from '@playwright/test';
-import { watchProblems, scrollThrough, expectAllPicturesLoaded } from './helpers';
+import { watchProblems, scrollThrough, expectAllPicturesLoaded, press } from './helpers';
 
 test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false });
@@ -123,9 +123,7 @@ test('no console errors or CSP violations through a full visit', async ({ page, 
   });
   await page.goto('/');
   await scrollThrough(page);
-  const opener = page.locator('figure.work .frame').first();
-  if (isMobile) await opener.tap();
-  else await opener.click();
+  await press(page, isMobile, page.locator('figure.work .frame').first());
   await page.locator('dialog.lightbox .lb-next').click();
   await page.keyboard.press('Escape');
   expect(problems).toEqual([]);
@@ -153,9 +151,7 @@ test.describe('the demo sash', () => {
   test('shows in the enlarged view too, clear of Close', async ({ page, isMobile }) => {
     await page.goto('/');
     test.skip((await page.locator('.sash').count()) === 0, 'content is not placeholder data: no sash');
-    const opener = page.locator('figure.work .frame').first();
-    if (isMobile) await opener.tap();
-    else await opener.click();
+    await press(page, isMobile, page.locator('figure.work .frame').first());
     const dialog = page.locator('dialog.lightbox');
     await expect(dialog).toBeVisible();
     await expect(dialog.locator('.sash span')).toBeVisible();

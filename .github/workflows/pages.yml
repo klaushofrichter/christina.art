@@ -63,9 +63,7 @@ jobs:
       - name: Build the static copy
         env:
           APP_VERSION: ${{ steps.rel.outputs.version }}
-        run: |
-          npm run build
-          npx tsx scripts/build-pages.ts _site "/${GITHUB_REPOSITORY#*/}"
+        run: npx tsx scripts/build-pages.ts _site "/${GITHUB_REPOSITORY#*/}"
 
       - uses: actions/upload-pages-artifact@v5
         with:

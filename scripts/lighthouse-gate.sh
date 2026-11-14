@@ -38,41 +38,14 @@ for n in $(seq 1 "$RUNS"); do
     --output=json --output=html --output-path="./$OUT-run$n"
 done
 
-# The median run by performance becomes the report; the rest are dropped.
-median=$(node -e "
-const runs=[];for(let n=1;n<=$RUNS;n++)runs.push({n,p:require('./$OUT-run'+n+'.report.json').categories.performance.score});
-runs.sort((a,b)=>a.p-b.p);console.log(runs[Math.floor(runs.length/2)].n)")
-echo "Lighthouse performance per run: $(for n in $(seq 1 "$RUNS"); do node -e "process.stdout.write(Math.round(require('./$OUT-run$n.report.json').categories.performance.score*100)+' ')"; done)(median: run $median)"
+# One pass over the reports: scores against the floors, what lost points.
+status=0
+summary=$(node "$(dirname "$0")/lighthouse-summary.js" "./$OUT" "$RUNS") || status=$?
+printf '%s\n' "$summary" | grep -v '^median='
+median=$(printf '%s\n' "$summary" | sed -n 's/^median=//p')
 
-failed=0
-for cat in performance accessibility best-practices seo; do
-  if [ "$cat" = performance ]; then
-    score=$(node -e "console.log(Math.round(require('./$OUT-run$median.report.json').categories.performance.score*100))")
-  else
-    # The lowest of all runs: these never vary on a sound page.
-    score=$(node -e "let m=100;for(let n=1;n<=$RUNS;n++)m=Math.min(m,Math.round(require('./$OUT-run'+n+'.report.json').categories['$cat'].score*100));console.log(m)")
-  fi
-  floor=${FLOOR[$cat]}
-  if [ "$score" -lt "$floor" ]; then
-    echo "::error::Lighthouse $cat is $score, below $floor"
-    failed=1
-  else
-    echo "Lighthouse $cat: $score (floor $floor)"
-  fi
-done
-
+# The median run becomes the report; the rest are dropped.
 cp "$OUT-run$median.report.json" "$OUT.report.json"
 cp "$OUT-run$median.report.html" "$OUT.report.html"
 for n in $(seq 1 "$RUNS"); do rm -f "$OUT-run$n.report.json" "$OUT-run$n.report.html"; done
-
-# Name what lost points (in the median run), so nobody has to open the report
-# to start fixing.
-node -e "
-const a=require('./$OUT.report.json').audits;
-for (const [id,x] of Object.entries(a))
-  if (x.score!==null && x.score<0.9 && !['informative','notApplicable','manual'].includes(x.scoreDisplayMode))
-    console.log('  below 90: '+id+' '+(x.displayValue||''));
-for (const k of ['first-contentful-paint','largest-contentful-paint','cumulative-layout-shift','total-blocking-time','total-byte-weight'])
-  console.log('  '+k+': '+a[k].displayValue);
-"
-exit $failed
+exit $status

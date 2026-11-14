@@ -22,6 +22,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import sharp from 'sharp';
+import type { ImageEntry } from '../src/content';
 
 const ROOT = path.join(__dirname, '..');
 const INCOMING = path.join(ROOT, 'images-incoming');
@@ -42,13 +43,6 @@ const SETTINGS_VERSION = 1;
 
 const IMAGE_EXT = /\.(jpe?g|png|webp|tiff?|heic|avif)$/i;
 
-export type ImageEntry = {
-  width: number;
-  height: number;
-  widths: number[];
-  hash: string;
-  color: string;
-};
 export type ImageManifest = { works: Record<string, ImageEntry>; artist: ImageEntry | null };
 
 /** Upright, sRGB, bounded, metadata-free JPEG. sharp writes no EXIF, XMP or
@@ -108,7 +102,7 @@ function mutedHex(r: number, g: number, b: number): string {
   return `#${hex(mix(r, 200))}${hex(mix(g, 194))}${hex(mix(b, 186))}`;
 }
 
-async function derive(master: string, slug: string, widthsWanted: number[]): Promise<ImageEntry> {
+async function derive(master: string, slug: string, widthsWanted: number[], previous?: ImageEntry | null): Promise<ImageEntry> {
   const bytes = fs.readFileSync(master);
   const meta = await sharp(bytes).metadata();
   const width = meta.width!;
@@ -129,16 +123,20 @@ async function derive(master: string, slug: string, widthsWanted: number[]): Pro
   const keep = new Set<string>();
   for (const w of widths) {
     const base = `${slug}-${w}.${hash}`;
-    const resized = () => sharp(bytes).resize({ width: w, withoutEnlargement: true });
-    const jobs: [string, () => Promise<Buffer>][] = [
-      [`${base}.avif`, () => resized().avif({ quality: QUALITY.avif, effort: 6 }).toBuffer()],
-      [`${base}.webp`, () => resized().webp({ quality: QUALITY.webp, effort: 6 }).toBuffer()],
-      [`${base}.jpg`, () => resized().jpeg({ quality: QUALITY.jpeg, mozjpeg: true, progressive: true }).toBuffer()],
+    // One decode and resize per width, cloned for each format, and only when
+    // a file is missing (names carry the hash, so an existing file is current).
+    let resized: sharp.Sharp | null = null;
+    const encoders: [string, (s: sharp.Sharp) => sharp.Sharp][] = [
+      [`${base}.avif`, (s) => s.avif({ quality: QUALITY.avif, effort: 6 })],
+      [`${base}.webp`, (s) => s.webp({ quality: QUALITY.webp, effort: 6 })],
+      [`${base}.jpg`, (s) => s.jpeg({ quality: QUALITY.jpeg, mozjpeg: true, progressive: true })],
     ];
-    for (const [name, make] of jobs) {
+    for (const [name, encode] of encoders) {
       keep.add(name);
       const file = path.join(OUT, name);
-      if (!fs.existsSync(file)) fs.writeFileSync(file, await make());
+      if (fs.existsSync(file)) continue;
+      resized ??= sharp(bytes).resize({ width: w, withoutEnlargement: true });
+      fs.writeFileSync(file, await encode(resized.clone()).toBuffer());
     }
   }
   // Drop this picture's derivatives from earlier settings or an older master.
@@ -149,8 +147,11 @@ async function derive(master: string, slug: string, widthsWanted: number[]): Pro
     if (derivativeSlug(name) === slug && !keep.has(name)) fs.rmSync(path.join(OUT, name));
   }
 
-  const { dominant } = await sharp(bytes).stats();
-  return { width, height, widths, hash, color: mutedHex(dominant.r, dominant.g, dominant.b) };
+  // The loading colour only changes with the master (the hash): reuse it
+  // rather than decode the whole picture again on every run.
+  const known = previous?.hash === hash ? previous.color : null;
+  const color = known ?? (await sharp(bytes).stats().then(({ dominant }) => mutedHex(dominant.r, dominant.g, dominant.b)));
+  return { width, height, widths, hash, color };
 }
 
 /** An .ico holding PNG images: valid for every browser since IE Vista-era. */
@@ -209,7 +210,7 @@ async function favicons(): Promise<void> {
       .toBuffer();
   const small = await Promise.all([16, 32, 48].map(async (size) => ({ size, data: await png(size) })));
   fs.writeFileSync(path.join(PUBLIC, 'favicon.ico'), ico(small));
-  fs.writeFileSync(path.join(PUBLIC, 'favicon-32.png'), await png(32));
+  fs.writeFileSync(path.join(PUBLIC, 'favicon-32.png'), small[1].data);
   fs.writeFileSync(path.join(PUBLIC, 'apple-touch-icon.png'), await png(180));
   fs.writeFileSync(path.join(PUBLIC, 'icon-192.png'), await png(192));
   fs.writeFileSync(path.join(PUBLIC, 'icon-512.png'), await png(512));
@@ -220,14 +221,15 @@ async function main(): Promise<void> {
   fs.mkdirSync(OUT, { recursive: true });
 
   const manifest: ImageManifest = { works: {}, artist: null };
+  const before: ImageManifest = fs.existsSync(MANIFEST) ? JSON.parse(fs.readFileSync(MANIFEST, 'utf8')) : { works: {}, artist: null };
   const masters = fs.existsSync(WORKS_DIR) ? fs.readdirSync(WORKS_DIR).filter((n) => n.endsWith('.jpg')).sort() : [];
   for (const name of masters) {
     const slug = slugOf(name);
-    manifest.works[slug] = await derive(path.join(WORKS_DIR, name), slug, WORK_WIDTHS);
+    manifest.works[slug] = await derive(path.join(WORKS_DIR, name), slug, WORK_WIDTHS, before.works?.[slug]);
     console.log(`works/${slug}: ${manifest.works[slug].widths.join(', ')}`);
   }
   if (fs.existsSync(PORTRAIT)) {
-    manifest.artist = await derive(PORTRAIT, 'artist', PORTRAIT_WIDTHS);
+    manifest.artist = await derive(PORTRAIT, 'artist', PORTRAIT_WIDTHS, before.artist);
     console.log(`artist: ${manifest.artist.widths.join(', ')}`);
   }
   // Remove derivatives whose master no longer exists.
