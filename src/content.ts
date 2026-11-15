@@ -49,6 +49,11 @@ export const COMPILED = path.join(__dirname, 'content.json');
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+/** A work's year: a whole number from 1900 to 2200. */
+export function isYear(n: number): boolean {
+  return Number.isInteger(n) && n >= 1900 && n <= 2200;
+}
+
 /** YYYY-MM-DD and a day that exists: no month 13, no 31 April, no 29
  *  February outside a leap year. Checked in UTC, where no clock shift can
  *  move the day. */
@@ -103,9 +108,8 @@ export function loadSite(dir: string = CONTENT_DIR): Site {
     if (seen.has(slug)) throw new Error(`content/works.json: image "${slug}" is used by two works`);
     seen.add(slug);
     if (!w.title) throw new Error(`content/works.json: work "${slug}" has no title`);
-    // The same rule as the sheet's (scripts/sheet-format.ts), for files edited by hand.
     const year = Number(w.year);
-    if (!Number.isInteger(year) || year < 1900 || year > 2200) {
+    if (!isYear(year)) {
       throw new Error(`content/works.json: work "${slug}" has year "${w.year}", which is not a year`);
     }
     return {

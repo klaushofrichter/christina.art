@@ -23,8 +23,13 @@ export function dateRange(from: string, to: string): string {
   return `${fd} ${MONTHS[fm - 1]} – ${end}`;
 }
 
+/** A derivative's URL, as npm run images names it. */
+function imgUrl(slug: string, img: ImageEntry, w: number, ext: string): string {
+  return `/img/${slug}-${w}.${img.hash}.${ext}`;
+}
+
 function srcset(slug: string, img: ImageEntry, ext: string): string {
-  return img.widths.map((w) => `/img/${slug}-${w}.${img.hash}.${ext} ${w}w`).join(', ');
+  return img.widths.map((w) => `${imgUrl(slug, img, w, ext)} ${w}w`).join(', ');
 }
 
 /** AVIF, then WebP, then JPEG: each browser takes the first it can show, at
@@ -35,24 +40,28 @@ export function picture(
   img: ImageEntry,
   alt: string,
   sizes: string,
-  opts: { eager?: boolean; cls?: string } = {},
+  eager = false,
 ): string {
   return `<picture>
 <source type="image/avif" srcset="${srcset(slug, img, 'avif')}" sizes="${sizes}">
 <source type="image/webp" srcset="${srcset(slug, img, 'webp')}" sizes="${sizes}">
-<img${opts.cls ? ` class="${opts.cls}"` : ''} src="${fallbackJpg(slug, img)}" srcset="${srcset(slug, img, 'jpg')}" sizes="${sizes}" width="${img.width}" height="${img.height}" alt="${esc(alt)}" data-color="${img.color}" ${opts.eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">
+<img src="${fallbackJpg(slug, img)}" srcset="${srcset(slug, img, 'jpg')}" sizes="${sizes}" width="${img.width}" height="${img.height}" alt="${esc(alt)}" data-color="${img.color}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">
 </picture>`;
 }
 
 /** The JPEG a browser without srcset support shows, and the social preview:
  *  1200px wide, or the largest there is. */
 function fallbackJpg(slug: string, img: ImageEntry): string {
-  const w = img.widths.find((x) => x >= 1200) ?? img.widths[img.widths.length - 1];
-  return `/img/${slug}-${w}.${img.hash}.jpg`;
+  return imgUrl(slug, img, img.widths.find((x) => x >= 1200) ?? img.widths[img.widths.length - 1], 'jpg');
 }
 
 function largest(slug: string, img: ImageEntry): string {
-  return `/img/${slug}-${img.widths[img.widths.length - 1]}.${img.hash}.jpg`;
+  return imgUrl(slug, img, img.widths[img.widths.length - 1], 'jpg');
+}
+
+/** "Upcoming" or "Past" and its shows; nothing when there are none. */
+function exhibitionGroup(label: string, list: Exhibition[]): string {
+  return list.length ? `<h3 class="group reveal">${label}</h3>\n<ul class="shows">\n${list.map(exhibitionItem).join('\n')}\n</ul>` : '';
 }
 
 function exhibitionItem(e: Exhibition): string {
@@ -91,14 +100,17 @@ export function renderHome(site: Site, assets: Assets, today: Date = new Date())
   // browser so lets it fetch the smaller file it actually needs.
   const workSizes = (img: ImageEntry) => {
     const aspect = (img.width / img.height).toFixed(3);
-    return `(min-width: 700px) min(1100px, calc(100vw - 64px), calc(82vh * ${aspect})), min(calc(100vw - 32px), calc(82vh * ${aspect}))`;
+    // The height cap as site.css has it (--cap: min(82svh, 1400px)), in vh:
+    // never smaller than svh, so a browser fetches at most a little more.
+    const cap = `min(82vh, 1400px)`;
+    return `(min-width: 700px) min(1100px, calc(100vw - 64px), calc(${cap} * ${aspect})), min(calc(100vw - 32px), calc(${cap} * ${aspect}))`;
   };
   const works = site.works
     .map((w, i) => {
       const caption = [w.year, w.medium, w.size].filter(Boolean).map((x) => esc(String(x))).join(' · ');
       return `<figure class="work reveal" id="work-${esc(w.slug)}">
 <a class="frame" href="${largest(w.slug, w.image)}" data-index="${i}" aria-label="${esc(w.title)}, view large">
-${picture(w.slug, w.image, w.title, workSizes(w.image), { eager: i === 0 })}
+${picture(w.slug, w.image, w.title, workSizes(w.image), i === 0)}
 </a>
 <figcaption><span class="title">${esc(w.title)}</span><span class="meta">${caption}</span></figcaption>
 </figure>`;
@@ -157,8 +169,8 @@ ${works}
 
 <section class="exhibitions" id="exhibitions">
 <h2 class="reveal">Exhibitions</h2>
-${upcoming.length ? `<h3 class="group reveal">Upcoming</h3>\n<ul class="shows">\n${upcoming.map(exhibitionItem).join('\n')}\n</ul>` : ''}
-${past.length ? `<h3 class="group reveal">Past</h3>\n<ul class="shows">\n${past.map(exhibitionItem).join('\n')}\n</ul>` : ''}
+${exhibitionGroup('Upcoming', upcoming)}
+${exhibitionGroup('Past', past)}
 </section>
 
 <section class="about" id="about">

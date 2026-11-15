@@ -4,18 +4,14 @@
  * ship (production-checks.yml), and after it against https://christinaschwarz.art
  * (live-check.yml). Untagged tests run before release only.
  */
-import { test, expect, Page } from '@playwright/test';
-import { watchProblems, scrollThrough, expectAllPicturesLoaded } from './helpers';
+import { test, expect } from '@playwright/test';
+import { watchProblems, scrollThrough, expectAllPicturesLoaded, press } from './helpers';
+import { versionLabel } from '../src/views/page';
 
 /** Set by live-check.yml to the release just deployed. */
 const EXPECT_VERSION = process.env.EXPECT_VERSION;
 /** Only against the real hostname do www and plain http mean anything. */
 const PRODUCTION = process.env.BASE_URL === 'https://christinaschwarz.art';
-
-async function press(page: Page, isMobile: boolean, locator: ReturnType<Page['locator']>) {
-  if (isMobile) await locator.tap();
-  else await locator.click();
-}
 
 test('@live /health is ok and names the release the footer shows', async ({ page, request }) => {
   const res = await request.get('/health');
@@ -27,8 +23,7 @@ test('@live /health is ok and names the release the footer shows', async ({ page
 
   await page.goto('/');
   const footer = page.locator('footer .ver');
-  const label = /^\d{4}\.\d{2}\.\d{2}\.\d+$/.test(body.version) ? `v${body.version}` : body.version;
-  await expect(footer).toHaveText(label);
+  await expect(footer).toHaveText(versionLabel(body.version));
 });
 
 test('@live the home page loads completely, every picture included', async ({ page }) => {

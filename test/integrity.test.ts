@@ -12,7 +12,9 @@ import { createApp } from '../src/app';
 import { loadSite } from '../src/content';
 
 const site = loadSite();
-const app = () => createApp(site);
+// One app for the whole file: building one hashes the client files.
+const server = createApp(site);
+const app = () => server;
 const ROOT = path.join(__dirname, '..');
 
 /** Every same-origin URL a page names: src, srcset entries and href. */
@@ -31,7 +33,8 @@ describe('every file the page refers to', () => {
     const urls = referencedUrls(page.text);
     expect(urls.length).toBeGreaterThan(50);
     for (const u of urls) {
-      const res = await request(app()).get(u);
+      // HEAD for the pictures: status and type are the point, not ~30 MB of bytes.
+      const res = u.startsWith('/img/') ? await request(app()).head(u) : await request(app()).get(u);
       expect(res.status, u).toBe(200);
       const ext = path.extname(u.split('?')[0]);
       const type = { '.avif': 'image/avif', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.css': 'text/css', '.js': 'javascript', '.svg': 'image/svg', '.ico': 'image/', '.png': 'image/png' }[ext];
