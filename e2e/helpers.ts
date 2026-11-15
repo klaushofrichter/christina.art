@@ -12,7 +12,7 @@ export function watchProblems(page: Page): string[] {
   page.on('response', (r) => {
     // Same-origin requests that fail are broken links or missing files.
     const u = new URL(r.url());
-    if (u.origin === new URL(page.url() || r.url()).origin && r.status() >= 400 && !u.pathname.startsWith('/does-not-exist')) {
+    if (u.origin === new URL(page.url() || r.url()).origin && r.status() >= 400) {
       problems.push(`HTTP ${r.status()}: ${u.pathname}`);
     }
   });
@@ -58,4 +58,10 @@ export async function expectAllPicturesLoaded(page: Page): Promise<void> {
       { timeout: 20_000, message: 'pictures that did not load' },
     )
     .toEqual([]);
+}
+
+/** Tap on a phone, click on a desktop: what a visitor there would do. */
+export async function press(page: Page, isMobile: boolean, locator: ReturnType<Page['locator']>): Promise<void> {
+  if (isMobile) await locator.tap();
+  else await locator.click();
 }

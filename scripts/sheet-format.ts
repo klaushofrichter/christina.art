@@ -21,6 +21,8 @@
  * JSON.stringify(value, null, 2) plus a final newline, keys in a fixed order.
  */
 
+import { isCalendarDate, isYear } from '../src/content';
+
 export type Table = string[][];
 export type Tables = { meta: Table; bio: Table; works: Table; exhibitions: Table };
 export type ContentFiles = { 'bio.json': string; 'works.json': string; 'exhibitions.json': string };
@@ -91,7 +93,6 @@ function body(name: keyof Tables, table: Table): string[][] {
     .filter((r) => r.some((v) => v.trim() !== ''));
 }
 
-const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 function bool(v: string, where: string): boolean {
   const t = v.trim().toUpperCase();
@@ -151,7 +152,7 @@ export function tablesToJson(t: Tables): ContentFiles {
   const works = body('works', t.works).map((r, i) => {
     const where = `works row ${i + 2}`;
     const year = Number(r[2].trim());
-    if (!Number.isInteger(year) || year < 1900 || year > 2200) throw new Error(`${where}: year "${r[2]}" is not a year`);
+    if (!isYear(year)) throw new Error(`${where}: year "${r[2]}" is not a year`);
     const w: Record<string, unknown> = {
       image: text(r[0], `${where} image`),
       title: text(r[1], `${where} title`),
@@ -168,8 +169,8 @@ export function tablesToJson(t: Tables): ContentFiles {
     const where = `exhibitions row ${i + 2}`;
     const [title, kind, venue, city, from, to] = r.map((v) => v.trim());
     for (const [k, v] of [['from', from], ['to', to]] as const) {
-      if (!DATE.test(v)) {
-        throw new Error(`${where}: ${k} "${v}" must be YYYY-MM-DD (format the column as plain text in the sheet)`);
+      if (!isCalendarDate(v)) {
+        throw new Error(`${where}: ${k} "${v}" must be a real day as YYYY-MM-DD (format the column as plain text in the sheet)`);
       }
     }
     if (from > to) throw new Error(`${where}: from ${from} is after to ${to}`);

@@ -68,13 +68,11 @@ function arg(name: string): string | undefined {
 }
 const flag = (name: string) => process.argv.includes(`--${name}`);
 
-async function fetchTab(sheet: string, tab: string, gid: string | undefined, token?: string): Promise<string> {
+async function fetchTab(sheet: string, tab: string, gid: string | undefined): Promise<string> {
   const url = gid
     ? `https://docs.google.com/spreadsheets/d/${sheet}/export?format=csv&gid=${encodeURIComponent(gid)}`
     : `https://docs.google.com/spreadsheets/d/${sheet}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`;
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(url, { headers, redirect: 'follow' });
+  const res = await fetch(url, { redirect: 'follow' });
   const body = await res.text();
   if (!res.ok || /^\s*<(!doctype|html)/i.test(body)) {
     throw new Error(
