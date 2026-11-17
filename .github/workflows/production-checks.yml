@@ -30,7 +30,7 @@ jobs:
       # In the `test` job on purpose: `test` is a required check on
       # production, so a vulnerable dependency blocks the merge. As its own
       # job it would be advisory.
-      - run: npm audit --audit-level=high
+      - run: node scripts/npm-audit.mjs
 
       # The image is otherwise first built by the deploy, after the merge.
       # Build it here, then prove it is non-root on its own: run it with NO
