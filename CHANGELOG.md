@@ -21,8 +21,3 @@ this file is where notes are written *before* a release, not an archive.
      Currently empty. Last released: v2026.11.12.1. -->
 ## [Unreleased]
 
-- CI: the dependency audit lets one advisory through until 2026-12-17:
-  picomatch's ReDoS (GHSA-fc5q-39xc-vjpf), which has no fixed version yet and
-  reaches only the test and build tools, not the running service.
-  `scripts/npm-audit-allow.json` holds the entry; after that date it blocks again.
-
