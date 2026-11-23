@@ -120,7 +120,18 @@ jobs:
             git commit -m "Deploy christina-art ${SHA}"
             # Push before apply, always: an applied-but-unpushed change is
             # reverted by the next deploy from main.
-            git push
+            # kube-setup is shared by every service's deploy, and a plain push is
+            # rejected when another deploy lands first (2026-11-23: www-klaushofrichter
+            # lost the race to a parallel release). Rebase this one commit, which only
+            # changes the image line, onto fresh main and retry.
+            pushed=""
+            for attempt in 1 2 3 4 5; do
+              if git push -q; then pushed=yes; break; fi
+              echo "::warning::push to kube-setup rejected (attempt ${attempt}/5); rebasing onto fresh main"
+              sleep $(( attempt * 3 ))
+              git pull -q --rebase origin main || { echo "::error::rebase onto kube-setup main failed"; exit 1; }
+            done
+            [ -n "$pushed" ] || { echo "::error::could not push to kube-setup after 5 attempts"; exit 1; }
           fi
           kubectl apply -f "$MANIFEST"
 
