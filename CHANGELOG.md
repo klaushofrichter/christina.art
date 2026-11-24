@@ -21,3 +21,7 @@ this file is where notes are written *before* a release, not an archive.
      Currently empty. Last released: v2026.11.12.1. -->
 ## [Unreleased]
 
+- Tests: the check that every picture in the repository is free of EXIF, XMP and
+  IPTC (no GPS position, camera or dates) now covers every picture, including the
+  icons in `public/` and `design/`, not only `originals/` and `public/img/`.
+

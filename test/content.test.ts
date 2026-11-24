@@ -168,12 +168,14 @@ describe('the picture pipeline', () => {
 
 describe('pictures in the repository', () => {
   // The repo is public and camera photos carry GPS coordinates, the camera and
-  // the time in EXIF. Every picture committed must be clean.
-  const files = ['originals', 'public/img']
+  // the time in EXIF. Every picture committed must be clean, wherever it sits:
+  // originals/ and public/img/, but also the icons in public/ and design/
+  // (widened 2026-11-26 after art's originals turned out to carry GPS).
+  const files = ['originals', 'public', 'design']
     .map((d) => path.join(ROOT, d))
     .filter((d) => fs.existsSync(d))
     .flatMap((d) => fs.readdirSync(d, { recursive: true }).map((f) => path.join(d, String(f))))
-    .filter((f) => /\.(jpe?g|png|webp|avif)$/i.test(f));
+    .filter((f) => /\.(jpe?g|png|webp|avif|tiff?|heic)$/i.test(f));
 
   it('there are pictures to check', () => {
     expect(files.length).toBeGreaterThan(0);
